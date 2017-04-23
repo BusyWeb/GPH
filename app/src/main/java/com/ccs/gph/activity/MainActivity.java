@@ -27,6 +27,7 @@ import android.test.mock.MockPackageManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -72,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
     private static Context mContext;
 
     private static TextView latitude, longitude;
+    private static Switch switchMethod;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
 
         latitude = (TextView) findViewById(R.id.textViewLatitude);
         longitude = (TextView) findViewById(R.id.textViewLongitude);
+        switchMethod = (Switch) findViewById(R.id.switchMethod);
 
         btnStart = (Button)findViewById(R.id.btnStart);
         btnStart.setOnClickListener(new View.OnClickListener() {
@@ -97,9 +100,13 @@ public class MainActivity extends AppCompatActivity {
                 //System.exit(1);
                 //mApp.mockLocation();
 
-                //startMock(true);
+                if (switchMethod.isChecked()) {
+                    startLocationMock();
+                } else {
+                    startMock(true);
+                }
 
-                startLocationMock();
+                switchMethod.setEnabled(false);
             }
         });
 
@@ -110,9 +117,13 @@ public class MainActivity extends AppCompatActivity {
 
                 //mApp.mockLocationRemoval();
 
-                //stopMock();
+                if (switchMethod.isChecked()) {
+                    stopLocationMock();
+                } else {
+                    stopMock();
+                }
 
-                stopLocationMock();
+                switchMethod.setEnabled(true);
             }
         });
 
@@ -563,7 +574,7 @@ public class MainActivity extends AppCompatActivity {
 
             } else {
                 ActivityCompat.requestPermissions(this, new String[] {
-                               // Manifest.permission.ACCESS_MOCK_LOCATION,
+                                // Manifest.permission.ACCESS_MOCK_LOCATION,
                                 Manifest.permission.ACCESS_FINE_LOCATION,
                                 Manifest.permission.ACCESS_COARSE_LOCATION },
                         0); //TAG_CODE_PERMISSION_LOCATION);
@@ -574,10 +585,10 @@ public class MainActivity extends AppCompatActivity {
             }
 
             //if has , remove first
-            if (locationMgr.getProvider(strProvider) != null) {
-
-                locationMgr.removeTestProvider(strProvider);
-            }
+//            if (locationMgr.getProvider(strProvider) != null) {
+//
+//                locationMgr.removeTestProvider(strProvider);
+//            }
 
 /*
             if (listPoints.size()<=0) {
@@ -590,20 +601,34 @@ public class MainActivity extends AppCompatActivity {
             mockForever = foreverFlag;
 */
 
+//            locationMgr.addTestProvider
+//                    (
+//                            strProvider,
+//                            "requiresNetwork" == "",
+//                            "requiresSatellite" == "",
+//                            "requiresCell" == "",
+//                            "hasMonetaryCost" == "",
+//                            "supportsAltitude" == "",
+//                            "supportsSpeed" == "",
+//                            "supportsBearing" == "",
+//                            android.location.Criteria.POWER_LOW,
+//                            android.location.Criteria.ACCURACY_FINE
+//                    );
             locationMgr.addTestProvider
                     (
                             strProvider,
-                            "requiresNetwork" == "",
-                            "requiresSatellite" == "",
-                            "requiresCell" == "",
-                            "hasMonetaryCost" == "",
-                            "supportsAltitude" == "",
-                            "supportsSpeed" == "",
-                            "supportsBearing" == "",
+                            false,
+                            false,
+                            false,
+                            false,
+                            false,
+                            false,
+                            false,
                             android.location.Criteria.POWER_LOW,
                             android.location.Criteria.ACCURACY_FINE
                     );
 
+            locationMgr.setTestProviderEnabled(strProvider, true);
 
             Toast.makeText(getApplicationContext(), "OK loc prov found!", Toast.LENGTH_SHORT).show();
             Location mockLocation = new Location(strProvider); // a string
@@ -619,7 +644,14 @@ public class MainActivity extends AppCompatActivity {
             //stopFlag = Boolean.FALSE;
             //start handle runable
             //taskHandle.postDelayed(this, 2);
+
+            locationMockStarted = true;
+            updateUi();
+
         } catch (Exception ex) {
+//            if (locationMgr.getProvider(strProvider) != null) {
+//                locationMgr.removeTestProvider(strProvider);
+//            }
             Log.e("exception", ex.getMessage());
             //this.callback.updateLocationInfo(null, "ERROR: " + ex.getMessage());
             //stopFlag = Boolean.TRUE;
@@ -630,7 +662,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             //stopFlag = Boolean.TRUE;
 
-           // callback.updateLatLngInfo(null, "stop");
+            // callback.updateLatLngInfo(null, "stop");
             if (locationMgr.getProvider(strProvider) != null) {
 
                 //taskHandle.removeCallbacks(this);
@@ -639,16 +671,20 @@ public class MainActivity extends AppCompatActivity {
                 locationMgr.clearTestProviderEnabled(strProvider);
                 locationMgr.removeTestProvider(strProvider);
 
-           //     this.callback.updateLocationInfo(null, "Stop mocking location!");
+                //     this.callback.updateLocationInfo(null, "Stop mocking location!");
 
 
             }
 
             locationMgr = null;
+
+            locationMockStarted = false;
+            updateUi();
+
         } catch (Exception ex) {
             Log.e("exception", ex.getMessage());
-        //    this.callback.updateLocationInfo(null, "ERROR:" + ex.getMessage());
-        //    stopFlag = Boolean.TRUE;
+            //    this.callback.updateLocationInfo(null, "ERROR:" + ex.getMessage());
+            //    stopFlag = Boolean.TRUE;
         }
     }
 
@@ -664,7 +700,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e("ex sec", exsec.getMessage());
         } catch (Exception ex) {
             Log.e("exception", ex.getMessage());
-        //    this.callback.updateLocationInfo(null, "ERROR:" + ex.getMessage());
+            //    this.callback.updateLocationInfo(null, "ERROR:" + ex.getMessage());
             return null;
         }
         return null;

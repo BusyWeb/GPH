@@ -72,4 +72,14 @@
 
     </LinearLayout>
 
+    <Switch
+        android:id="@+id/switchMethod"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btnStop"
+        android:layout_marginTop="24dp"
+        android:text="Use GPS Simulation Method"
+        android:layout_alignEnd="@+id/linearLayout"
+        android:layout_alignStart="@+id/btnStop" />
+
 </RelativeLayout>
