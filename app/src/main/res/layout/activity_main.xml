@@ -38,11 +38,11 @@
         android:id="@+id/linearLayout"
         android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="19dp"
         android:orientation="vertical"
-        android:layout_alignTop="@+id/btnStart"
+        android:layout_marginStart="20dp"
         android:layout_toEndOf="@+id/btnStart"
-        android:layout_marginStart="17dp">
+        android:layout_alignParentTop="true"
+        android:weightSum="1">
 
         <TextView
             android:id="@+id/textViewLocationTitle"
@@ -57,7 +57,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/btnStart"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:layout_toEndOf="@+id/linearLayout"
             android:text="0.0" />
 
@@ -70,16 +70,38 @@
             android:layout_toEndOf="@+id/linearLayout"
             android:text="0.0" />
 
+        <EditText
+            android:id="@+id/editTextLatitude"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:ems="10"
+            android:inputType="numberDecimal" />
+
+        <EditText
+            android:id="@+id/editTextLongitude"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="numberDecimal"
+            android:layout_weight="5.25" />
+
+        <Button
+            android:id="@+id/buttonSetLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Set Location" />
+
     </LinearLayout>
 
     <Switch
         android:id="@+id/switchMethod"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/btnStop"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="77dp"
         android:text="Use GPS Simulation Method"
-        android:layout_alignEnd="@+id/linearLayout"
-        android:layout_alignStart="@+id/btnStop" />
+        android:layout_below="@+id/btnStop"
+        android:layout_alignStart="@+id/btnStop"
+        android:layout_alignEnd="@+id/linearLayout" />
 
 </RelativeLayout>

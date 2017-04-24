@@ -27,6 +27,7 @@ import android.test.mock.MockPackageManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -74,6 +75,12 @@ public class MainActivity extends AppCompatActivity {
 
     private static TextView latitude, longitude;
     private static Switch switchMethod;
+
+    private static EditText editLatitude, editLongitude;
+    private static Button buttonSetLocation;
+    private static double mLatitude, mLongitude;
+    private static boolean mHasMockLocation = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,9 +134,45 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        editLatitude = (EditText) findViewById(R.id.editTextLatitude);
+        editLongitude = (EditText) findViewById(R.id.editTextLongitude);
+        buttonSetLocation = (Button) findViewById(R.id.buttonSetLocation);
+        buttonSetLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                checkLocationValues();
+
+                if (mHasMockLocation) {
+                    Toast.makeText(mContext, "Using provided location...", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(mContext, "Using random location values...", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
         locationMgr = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 
+        checkLocationValues();
+
         checkPermissions();
+    }
+
+    private void checkLocationValues() {
+        try {
+            String lat = editLatitude.getText().toString();
+            String lng = editLongitude.getText().toString();
+            if (lat == null || lng == null || lat.length() < 1 || lng.length() < 1) {
+                mHasMockLocation = false;
+                mLatitude = 0.0d;
+                mLongitude = 0.0d;
+                return;
+            }
+            mHasMockLocation = true;
+            mLatitude = Double.parseDouble(lat);
+            mLongitude = Double.parseDouble(lng);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void checkPermissions() {
@@ -299,6 +342,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             locationMockStarted = true;
             updateUi();
+
             if (mCheckLocationRun != null) {
                 CheckLastLocationHandler.sendEmptyMessage(-1);
             }
@@ -314,8 +358,13 @@ public class MainActivity extends AppCompatActivity {
         try {
             locationMockStarted = false;
             updateUi();
+
             if (mCheckLocationRun != null) {
                 CheckLastLocationHandler.sendEmptyMessage(-1);
+            }
+
+            if (mMockLocationRun != null) {
+                MockLocationHandler.sendEmptyMessage(-1);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -392,12 +441,18 @@ public class MainActivity extends AppCompatActivity {
                     if (locationMockStarted) {
                         btnStart.setEnabled(false);
                         btnStop.setEnabled(true);
-
+                        buttonSetLocation.setEnabled(false);
                     } else {
                         btnStart.setEnabled(true);
                         btnStop.setEnabled(false);
-                        latitude.setText("0.0");
-                        longitude.setText("0.0");
+                        buttonSetLocation.setEnabled(true);
+                        if (mHasMockLocation) {
+                            latitude.setText(String.valueOf(mLatitude));
+                            longitude.setText(String.valueOf(mLongitude));
+                        } else {
+                            latitude.setText("0.0");
+                            longitude.setText("0.0");
+                        }
                     }
                 }
             });
@@ -411,6 +466,7 @@ public class MainActivity extends AppCompatActivity {
             mActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+
                     if (mLocation == null) {
                         latitude.setText("0.0");
                         longitude.setText("0.0");
@@ -563,6 +619,98 @@ public class MainActivity extends AppCompatActivity {
     }
 */
 
+    private void setRandomLocationValue(Location location) {
+        try {
+            double random = 1.0d - (2.0d * Math.random());
+            double sqrt = (Math.random() > 0.499d ? 1.0d : -1.0d) * Math.sqrt(1.0d - (random * random));
+            location.setLongitude((random * (1) + location.getLongitude()));
+            location.setLatitude((sqrt * ((1) + location.getLatitude())));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updateMockLocation() {
+        try {
+            Location mockLocation = new Location(strProvider); // a string
+
+            if (!mHasMockLocation) {
+                setRandomLocationValue(mockLocation);
+                mLatitude = mockLocation.getLatitude();
+                mLongitude = mockLocation.getLongitude();
+            } else {
+                mockLocation.setLatitude(mLatitude);  // double
+                mockLocation.setLongitude(mLongitude);
+            }
+
+            mockLocation.setAltitude(0.0);
+            mockLocation.setTime(System.currentTimeMillis());
+            mockLocation.setElapsedRealtimeNanos(1000);
+            mockLocation.setAccuracy(Criteria.ACCURACY_HIGH);
+
+            updateMockLocationInfo();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updateMockLocationInfo() {
+        try {
+            latitude.setText(String.format("%.6f", mLatitude));
+            longitude.setText(String.format("%.6f", mLongitude));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static MockLocationRun mMockLocationRun = null;
+
+    public class MockLocationRun implements Runnable {
+
+        @Override
+        public void run() {
+            mLastLocationCheckTime = new Date().getTime();
+
+            MockLocationHandler.sendEmptyMessage(0);
+
+            updateMockLocation();
+        }
+    }
+    public final Handler MockLocationHandler = new Handler() {
+
+        @Override
+        public void handleMessage(Message message) {
+            int what = message.what;
+
+            if (what == -1) {
+                // stop...
+                if (mMockLocationRun != null) {
+                    this.removeCallbacks(mMockLocationRun);
+                }
+                mMockLocationRun = null;
+                return;
+            } else {
+
+                if (mMockLocationRun != null) {
+                    this.removeCallbacks(mMockLocationRun);
+                }
+                if (!locationMockStarted) {
+                    return;
+                }
+
+
+                int nextCheck = 0;
+                nextCheck = 1000 - (int) (new Date().getTime() - mLastLocationCheckTime);
+                if (nextCheck < 0) {
+                    nextCheck = 0;
+                }
+
+                mMockLocationRun = new MockLocationRun();
+                this.postDelayed(mMockLocationRun, nextCheck);
+            }
+        }
+    };
+
     public void startMock(boolean foreverFlag) {
         try {
 
@@ -581,7 +729,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (locationMgr == null) {
-                locationMgr = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
+                locationMgr = (LocationManager) mActivity.getSystemService(Context.LOCATION_SERVICE);
             }
 
             //if has , remove first
@@ -631,13 +779,25 @@ public class MainActivity extends AppCompatActivity {
             locationMgr.setTestProviderEnabled(strProvider, true);
 
             Toast.makeText(getApplicationContext(), "OK loc prov found!", Toast.LENGTH_SHORT).show();
-            Location mockLocation = new Location(strProvider); // a string
-            mockLocation.setLatitude(-26.902038);  // double
-            mockLocation.setLongitude(-48.671337);
-            mockLocation.setAltitude(0.0);
-            mockLocation.setTime(System.currentTimeMillis());
-            mockLocation.setElapsedRealtimeNanos(1000);
-            mockLocation.setAccuracy(Criteria.ACCURACY_HIGH);
+
+//            Location mockLocation = new Location(strProvider); // a string
+//
+//            if (mHasMockLocation) {
+//                setRandomLocationValue(mockLocation);
+//                mLatitude = mockLocation.getLatitude();
+//                mLongitude = mockLocation.getLongitude();
+//            } else {
+//                mockLocation.setLatitude(mLatitude);  // double
+//                mockLocation.setLongitude(mLongitude);
+//            }
+//
+//            mockLocation.setAltitude(0.0);
+//            mockLocation.setTime(System.currentTimeMillis());
+//            mockLocation.setElapsedRealtimeNanos(1000);
+//            mockLocation.setAccuracy(Criteria.ACCURACY_HIGH);
+
+            updateMockLocation();
+
             //lm.setTestProviderLocation( mocLocationProvider, mockLocation);
             Toast.makeText(getApplicationContext(), "Working " + strProvider, Toast.LENGTH_SHORT).show();
 
@@ -647,6 +807,12 @@ public class MainActivity extends AppCompatActivity {
 
             locationMockStarted = true;
             updateUi();
+
+            if (mMockLocationRun != null) {
+                MockLocationHandler.sendEmptyMessage(-1);
+            }
+            mMockLocationRun = new MockLocationRun();
+            MockLocationHandler.postDelayed(mMockLocationRun, 1000);
 
         } catch (Exception ex) {
 //            if (locationMgr.getProvider(strProvider) != null) {
@@ -680,6 +846,10 @@ public class MainActivity extends AppCompatActivity {
 
             locationMockStarted = false;
             updateUi();
+
+            if (mMockLocationRun != null) {
+                MockLocationHandler.sendEmptyMessage(-1);
+            }
 
         } catch (Exception ex) {
             Log.e("exception", ex.getMessage());
