@@ -35,6 +35,7 @@ import android.widget.Toast;
 import com.ccs.gph.R;
 import com.ccs.gph.gps.AppGps;
 import com.ccs.gph.gps.AppLocationManager;
+import com.ccs.gph.service.serviceGPS;
 import com.ccs.gph.singleton.ApplicationSingletonGPS;
 import com.ccs.gph.util.AppShared;
 import com.ccs.gph.util.GeneralHelper;
@@ -713,7 +714,18 @@ public class MainActivity extends AppCompatActivity {
 
     public void startMock(boolean foreverFlag) {
         try {
+            // using service
+            Intent service = new Intent(mContext, serviceGPS.class);
+            service.putExtra("start", 1);
+            service.putExtra("hasMockLocation", mHasMockLocation);
+            startService(service);
 
+            locationMockStarted = true;
+            updateUi();
+
+            if (true) {
+                return;
+            }
 
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
                     PackageManager.PERMISSION_GRANTED &&
@@ -826,6 +838,20 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopMock() {
         try {
+            // service method
+            Intent service = new Intent(mContext, serviceGPS.class);
+            service.putExtra("stop", 1);
+            startService(service);
+
+            locationMockStarted = false;
+            updateUi();
+
+            if (true) {
+                return;
+            }
+
+
+
             //stopFlag = Boolean.TRUE;
 
             // callback.updateLatLngInfo(null, "stop");
