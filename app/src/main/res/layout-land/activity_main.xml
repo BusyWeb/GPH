@@ -13,7 +13,8 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="App: GPH" />
+        android:text="App: GPH"
+        android:id="@+id/textView4" />
 
     <Button
         android:text="Start G"
@@ -131,11 +132,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Change Magnitude" />
+                android:text="Change Amount" />
 
             <EditText
                 android:id="@+id/editTextChangeAmount"
-                android:layout_width="120dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:ems="10"
@@ -155,10 +156,8 @@
         android:id="@+id/switchMethod"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
         android:text="Use GPS Simulation Method"
-        android:layout_below="@+id/linearLayout"
-        android:layout_alignEnd="@+id/linearLayout"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true" />
 
 </RelativeLayout>

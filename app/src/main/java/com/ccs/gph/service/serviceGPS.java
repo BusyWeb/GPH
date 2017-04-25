@@ -24,6 +24,7 @@ import com.ccs.gph.activity.MainActivity;
 import com.ccs.gph.util.AppShared;
 
 import java.util.Date;
+import java.util.Random;
 
 /**
  * Created by okmac on 4/15/17.
@@ -124,11 +125,32 @@ public class serviceGPS extends Service {
         }
     }
 
+
     private void handleCommand(Intent intent) {
         try {
             int start = intent.getIntExtra("start", 0);
             if (start > 0) {
                 mHasMockLocation = intent.getBooleanExtra("hasMockLocation", false);
+
+                mChangeAmountEnabled = intent.getBooleanExtra("enableAmount", false);
+                String lat = intent.getStringExtra("latitude");
+                String lng = intent.getStringExtra("longitude");
+                String amount = intent.getStringExtra("amount");
+
+                if (mHasMockLocation) {
+                    mLatitudeLast = (lat == null || lat.equalsIgnoreCase("")) ? 0d : Double.parseDouble(lat);
+                    mLongitudeLast = (lng == null || lng.equalsIgnoreCase("")) ? 0d : Double.parseDouble(lng);
+                } else {
+                    mLatitudeLast = 0d;
+                    mLongitudeLast = 0d;
+                }
+
+                if (mChangeAmountEnabled) {
+                    mChangeAmount = (amount == null || amount.equalsIgnoreCase("")) ? 0d : Double.parseDouble(amount);
+                } else {
+                    mChangeAmount = 0d;
+                }
+
                 startMockService();
                 return;
             }
@@ -217,13 +239,15 @@ public class serviceGPS extends Service {
         }
     }
 
-    private static double mLatitude, mLongitude;
+    private static double mLatitude, mLongitude, mLatitudeLast, mLongitudeLast;
     private static boolean mHasMockLocation = false;
     private static Long mLastLocationCheckTime = 0L;
     private static boolean locationMockStarted = false;
     private static MockLocationRun mMockLocationRun = null;
     private final static String mProvider = "gps";
     private static LocationManager mLocationManager = null;
+    private static double mChangeAmount;
+    private static boolean mChangeAmountEnabled = false;
 
     public class MockLocationRun implements Runnable {
 
@@ -271,12 +295,59 @@ public class serviceGPS extends Service {
         }
     };
 
+
+
     private void setRandomLocationValue(Location location) {
         try {
             double random = 1.0d - (2.0d * Math.random());
             double sqrt = (Math.random() > 0.499d ? 1.0d : -1.0d) * Math.sqrt(1.0d - (random * random));
-            location.setLongitude((random * (1) + location.getLongitude()));
-            location.setLatitude((sqrt * ((1) + location.getLatitude())));
+
+            // check manual position change amount
+            if (mChangeAmountEnabled) {
+                if (mLatitudeLast == 0) {
+                    mLatitudeLast = (random * (1) + location.getLongitude());
+                }
+                if (mLongitudeLast == 0) {
+                    mLongitudeLast = (sqrt * ((1) + location.getLatitude()));
+                }
+                Random rad = new Random();
+                int direction = rad.nextInt(8);
+                if (direction == 0) {
+                    mLongitudeLast += mChangeAmount;
+                } else if (direction == 1) {
+                    mLatitudeLast += mChangeAmount;
+                } else if (direction == 2) {
+                    mLongitudeLast -= mChangeAmount;
+                } else if (direction == 3) {
+                    mLatitudeLast -= mChangeAmount;
+                } else if (direction == 4) {
+                    mLongitudeLast += mChangeAmount;
+                    mLatitudeLast += mChangeAmount;
+                } else if (direction == 5) {
+                    mLongitudeLast -= mChangeAmount;
+                    mLatitudeLast += mChangeAmount;
+                } else if (direction == 6) {
+                    mLongitudeLast -= mChangeAmount;
+                    mLatitudeLast -= mChangeAmount;
+                } else if (direction == 7) {
+                    mLongitudeLast += mChangeAmount;
+                    mLatitudeLast -= mChangeAmount;
+                }
+
+                location.setLongitude(mLongitudeLast);
+                location.setLatitude(mLatitudeLast);
+
+            } else {
+
+                if (mHasMockLocation) {
+                    location.setLongitude((random +  + (int)mLongitudeLast + location.getLongitude()));
+                    location.setLatitude((sqrt + (int)mLatitudeLast + location.getLatitude()));
+                } else {
+                    location.setLongitude((random * (1) + location.getLongitude()));
+                    location.setLatitude((sqrt * ((1) + location.getLatitude())));
+                }
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -286,14 +357,9 @@ public class serviceGPS extends Service {
         try {
             Location mockLocation = new Location(mProvider); // a string
 
-            if (!mHasMockLocation) {
-                setRandomLocationValue(mockLocation);
-                mLatitude = mockLocation.getLatitude();
-                mLongitude = mockLocation.getLongitude();
-            } else {
-                mockLocation.setLatitude(mLatitude);  // double
-                mockLocation.setLongitude(mLongitude);
-            }
+            setRandomLocationValue(mockLocation);
+            mLatitude = mockLocation.getLatitude();
+            mLongitude = mockLocation.getLongitude();
 
             mockLocation.setAltitude(0.0);
             mockLocation.setTime(System.currentTimeMillis());
@@ -310,7 +376,7 @@ public class serviceGPS extends Service {
         try {
             // handle location data
 
-            String msg = String.format("Latitude: %.6f, Longitude: %.6f", location.getLongitude(), location.getLongitude());
+            String msg = String.format("Latitude: %.6f, Longitude: %.6f", location.getLatitude(), location.getLongitude());
 
             // using notification
             // Set the icon, scrolling text and timestamp

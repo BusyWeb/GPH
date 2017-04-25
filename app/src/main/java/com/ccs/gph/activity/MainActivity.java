@@ -27,6 +27,7 @@ import android.test.mock.MockPackageManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -81,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
     private static Button buttonSetLocation;
     private static double mLatitude, mLongitude;
     private static boolean mHasMockLocation = false;
+    private static EditText editTextChangeAmount;
+    private static CheckBox checkBoxChangeAmount;
 
 
     @Override
@@ -152,6 +155,9 @@ public class MainActivity extends AppCompatActivity {
         });
 
         locationMgr = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+
+        editTextChangeAmount = (EditText) findViewById(R.id.editTextChangeAmount);
+        checkBoxChangeAmount = (CheckBox) findViewById(R.id.checkBoxEnableChangeAmount);
 
         checkLocationValues();
 
@@ -443,10 +449,19 @@ public class MainActivity extends AppCompatActivity {
                         btnStart.setEnabled(false);
                         btnStop.setEnabled(true);
                         buttonSetLocation.setEnabled(false);
+
+                        editLatitude.setEnabled(false);
+                        editLongitude.setEnabled(false);
+                        editTextChangeAmount.setEnabled(false);
+                        checkBoxChangeAmount.setEnabled(false);
                     } else {
                         btnStart.setEnabled(true);
                         btnStop.setEnabled(false);
                         buttonSetLocation.setEnabled(true);
+                        editLatitude.setEnabled(true);
+                        editLongitude.setEnabled(true);
+                        editTextChangeAmount.setEnabled(true);
+                        checkBoxChangeAmount.setEnabled(true);
                         if (mHasMockLocation) {
                             latitude.setText(String.valueOf(mLatitude));
                             longitude.setText(String.valueOf(mLongitude));
@@ -718,6 +733,10 @@ public class MainActivity extends AppCompatActivity {
             Intent service = new Intent(mContext, serviceGPS.class);
             service.putExtra("start", 1);
             service.putExtra("hasMockLocation", mHasMockLocation);
+            service.putExtra("latitude", editLatitude.getText().toString());
+            service.putExtra("longitude", editLongitude.getText().toString());
+            service.putExtra("enableAmount", checkBoxChangeAmount.isChecked());
+            service.putExtra("amount", editTextChangeAmount.getText().toString());
             startService(service);
 
             locationMockStarted = true;
