@@ -90,7 +90,7 @@
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:inputType="numberSigned|numberDecimal"
-                android:text="123.123456" />
+                android:text="34.123456" />
         </LinearLayout>
 
         <LinearLayout
@@ -141,13 +141,14 @@
                 android:layout_weight="1"
                 android:ems="10"
                 android:inputType="numberSigned|numberDecimal"
-                android:text="0.000014" />
+                android:text="0.00012" />
         </LinearLayout>
 
         <CheckBox
             android:id="@+id/checkBoxEnableChangeAmount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:checked="true"
             android:text="Location Change Amount" />
 
     </LinearLayout>

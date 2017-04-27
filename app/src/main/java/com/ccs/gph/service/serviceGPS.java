@@ -249,6 +249,7 @@ public class serviceGPS extends Service {
     private static LocationManager mLocationManager = null;
     private static double mChangeAmount;
     private static boolean mChangeAmountEnabled = false;
+    private static Location mMockLocation = null;
 
     public class MockLocationRun implements Runnable {
 
@@ -300,6 +301,7 @@ public class serviceGPS extends Service {
 
     private void setRandomLocationValue(Location location) {
         try {
+
             double random = 1.0d - (2.0d * Math.random());
             double sqrt = (Math.random() > 0.499d ? 1.0d : -1.0d) * Math.sqrt(1.0d - (random * random));
 
@@ -338,6 +340,7 @@ public class serviceGPS extends Service {
                 location.setLongitude(mLongitudeLast);
                 location.setLatitude(mLatitudeLast);
 
+
             } else {
 
                 if (mHasMockLocation) {
@@ -349,10 +352,10 @@ public class serviceGPS extends Service {
                 }
             }
 
-            location.setTime(System.currentTimeMillis());
-            location.setElapsedRealtimeNanos(System.nanoTime());
-            location.setAccuracy(10f);
-            location.setAltitude(100f);
+//            location.setTime(System.currentTimeMillis());
+//            location.setElapsedRealtimeNanos(System.nanoTime());
+//            location.setAccuracy(10f);
+//            location.setAltitude(100f);
 
             mLocationManager.setTestProviderStatus(mProvider, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
             mLocationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location);
@@ -364,18 +367,26 @@ public class serviceGPS extends Service {
 
     private void updateMockLocation() {
         try {
-            Location mockLocation = new Location(mProvider); // a string
+            //Location mockLocation = new Location(mProvider); // a string
+            mMockLocation = new Location(mProvider); // a string
 
-            setRandomLocationValue(mockLocation);
-            mLatitude = mockLocation.getLatitude();
-            mLongitude = mockLocation.getLongitude();
+            mLatitude = mMockLocation.getLatitude();
+            mLongitude = mMockLocation.getLongitude();
 
-            mockLocation.setAltitude(0.0);
-            mockLocation.setTime(System.currentTimeMillis());
-            mockLocation.setElapsedRealtimeNanos(1000);
-            mockLocation.setAccuracy(Criteria.ACCURACY_HIGH);
+            if ((Math.abs(mLongitude - mLongitudeLast) != 0)
+                    || Math.abs(mLatitude - mLatitudeLast) != 0) {
+                mMockLocation.setLongitude(mLongitudeLast);
+                mMockLocation.setLatitude(mLatitudeLast);
+            }
+            mMockLocation.setAccuracy(10f);
+            mMockLocation.setAltitude(100f);
+            mMockLocation.setTime(System.currentTimeMillis());
+            mMockLocation.setElapsedRealtimeNanos(System.nanoTime());
+            mMockLocation.setAccuracy(Criteria.ACCURACY_HIGH);
 
-            updateMockLocationInfo(mockLocation);
+            setRandomLocationValue(mMockLocation);
+            updateMockLocationInfo(mMockLocation);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
