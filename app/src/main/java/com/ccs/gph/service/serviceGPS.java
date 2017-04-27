@@ -12,6 +12,7 @@ import android.content.res.Resources;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -202,7 +203,7 @@ public class serviceGPS extends Service {
     private void prepareLocationManager() {
         try {
             if (mLocationManager == null) {
-                mLocationManager = (LocationManager) mActivity.getSystemService(Context.LOCATION_SERVICE);
+                mLocationManager = (LocationManager) AppShared.gActivity.getSystemService(Context.LOCATION_SERVICE);
             }
 
             mLocationManager.addTestProvider
@@ -347,6 +348,14 @@ public class serviceGPS extends Service {
                     location.setLatitude((sqrt * ((1) + location.getLatitude())));
                 }
             }
+
+            location.setTime(System.currentTimeMillis());
+            location.setElapsedRealtimeNanos(System.nanoTime());
+            location.setAccuracy(10f);
+            location.setAltitude(100f);
+
+            mLocationManager.setTestProviderStatus(mProvider, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+            mLocationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location);
 
         } catch (Exception e) {
             e.printStackTrace();

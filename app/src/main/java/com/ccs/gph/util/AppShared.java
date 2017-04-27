@@ -1,5 +1,6 @@
 package com.ccs.gph.util;
 
+import android.app.Activity;
 import android.content.Context;
 import android.location.LocationManager;
 
@@ -14,6 +15,7 @@ import com.ccs.gph.gps.LocationData;
 public class AppShared {
 
 
+    public static Activity gActivity;
     public static Context gContext;
 
     public static AppLocationManager gLocationManager = null;

@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         mActivity = this;
         mContext = this;
         AppShared.gContext = this;
+        AppShared.gActivity = this;
 
 
         mApp = (ApplicationSingletonGPS)getApplicationContext();
