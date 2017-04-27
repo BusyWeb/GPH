@@ -1,10 +1,12 @@
 package com.ccs.gph.util;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.preference.PreferenceManager;
 
 import com.ccs.gph.gps.AppGps;
 
@@ -19,6 +21,40 @@ import java.util.Date;
  */
 
 public class GeneralHelper {
+
+    public static void LoadPreferences(Context context) {
+        try {
+//            public static final String PREF_ADDRESS_KEY = "pref_address_key";
+//            public static final String PREF_ADDRESS_LATITUDE_KEY = "pref_address_latitude_key";
+//            public static final String PREF_ADDRESS_LONGITUDE_KEY = "pref_address_longitude_key";
+//            public static final String PREF_MOVEMENT_MAGNITUDE_KEY = "pref_movement_magnitude_key";
+//
+//            public static String PrefAddress = "";
+//            public static double PrefAddressLatitude = 0d;
+//            public static double PrefAddressLongitude = 0d;
+//            public static String PrefMovementMagnitude = "min";
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+
+            AppShared.PrefAddress = prefs.getString(AppShared.PREF_ADDRESS_KEY, "");
+            AppShared.PrefAddressLatitude = Double.parseDouble(prefs.getString(AppShared.PREF_ADDRESS_LATITUDE_KEY, "0"));
+            AppShared.PrefAddressLongitude = Double.parseDouble(prefs.getString(AppShared.PREF_ADDRESS_LONGITUDE_KEY, "0"));
+            AppShared.PrefMovementMagnitude = prefs.getString(AppShared.PREF_MOVEMENT_MAGNITUDE_KEY, "default");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public static void SavePreference(Context context, String key, String value) {
+        try {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString(key, value);
+            editor.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 
     public static Boolean IsGPSEnabled(Context context){

@@ -10,66 +10,62 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.ccs.gph.activity.MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="App: GPH"
-        android:id="@+id/textView4" />
-
     <Button
         android:text="Start G"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/btnStart"
 
-        android:layout_alignParentStart="true"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="41dp" />
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
 
     <Button
         android:text="Stop G"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/btnStop"
-        android:layout_marginTop="22dp"
+        android:layout_marginStart="69dp"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@+id/btnStart" />
+
+    <TextView
+        android:id="@+id/textViewLatitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_below="@+id/btnStart"
-        android:layout_alignStart="@+id/btnStart" />
+        android:layout_marginTop="8dp"
+        android:layout_toEndOf="@+id/linearLayout"
+        android:text="0.0"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/textViewLocationTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/btnStart"
+        android:layout_toEndOf="@+id/linearLayout"
+        android:text="LOCATION"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/textViewLongitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btnStart"
+        android:layout_marginTop="8dp"
+        android:layout_toEndOf="@+id/linearLayout"
+        android:text="0.0"
+        android:visibility="gone" />
 
     <LinearLayout
         android:id="@+id/linearLayout"
-        android:layout_width="200dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/btnStart"
         android:orientation="vertical"
-        android:layout_marginStart="20dp"
-        android:layout_toEndOf="@+id/btnStart"
-        android:layout_alignParentTop="true"
-        android:weightSum="1">
-
-        <TextView
-            android:id="@+id/textViewLocationTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignTop="@+id/btnStart"
-            android:layout_toEndOf="@+id/linearLayout"
-            android:text="LOCATION" />
-
-        <TextView
-            android:id="@+id/textViewLatitude"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/btnStart"
-            android:layout_marginTop="8dp"
-            android:layout_toEndOf="@+id/linearLayout"
-            android:text="0.0" />
-
-        <TextView
-            android:id="@+id/textViewLongitude"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/btnStart"
-            android:layout_marginTop="8dp"
-            android:layout_toEndOf="@+id/linearLayout"
-            android:text="0.0" />
+        android:weightSum="1"
+        android:layout_alignEnd="@+id/btnStop">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -79,15 +75,16 @@
 
             <TextView
                 android:id="@+id/textView"
-                android:layout_width="wrap_content"
+                android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Latitude" />
 
             <EditText
                 android:id="@+id/editTextLatitude"
-                android:layout_width="134dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:ems="10"
                 android:inputType="numberSigned|numberDecimal"
                 android:text="34.123456" />
@@ -100,16 +97,16 @@
 
             <TextView
                 android:id="@+id/textView2"
-                android:layout_width="wrap_content"
+                android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Longitude" />
 
             <EditText
                 android:id="@+id/editTextLongitude"
-                android:layout_width="134dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="0.14"
+                android:layout_weight="1"
                 android:ems="10"
                 android:inputType="numberSigned|numberDecimal"
                 android:text="-118.123456" />
@@ -119,7 +116,7 @@
             android:id="@+id/buttonSetLocation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Set Location" />
+            android:text="Set Location By Position" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -140,8 +137,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:ems="10"
+                android:enabled="false"
                 android:inputType="numberSigned|numberDecimal"
-                android:text="0.00012" />
+                android:text="0.0005" />
         </LinearLayout>
 
         <CheckBox
@@ -149,16 +147,91 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:checked="true"
-            android:text="Location Change Amount" />
+            android:enabled="false"
+            android:text="Movement Change Amount" />
 
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:orientation="vertical"
+        android:layout_below="@+id/btnStop"
+        android:layout_alignParentEnd="true"
+        android:layout_toEndOf="@+id/btnStop">
+
+        <TextView
+            android:id="@+id/textView5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ADDRESS:" />
+
+        <EditText
+            android:id="@+id/editTextAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="textPostalAddress" />
+
+        <Button
+            android:id="@+id/buttonSetAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Set Location By Address" />
+    </LinearLayout>
     <Switch
         android:id="@+id/switchMethod"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Use GPS Simulation Method"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignBaseline="@+id/btnStop"
+        android:layout_alignBottom="@+id/btnStop"
+        android:layout_alignParentEnd="true"
+        android:layout_alignStart="@+id/linearLayout2" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_below="@+id/linearLayout2"
+        android:layout_alignStart="@+id/linearLayout2">
+
+        <TextView
+            android:id="@+id/textView6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="MOVEMENT SETTINGS" />
+
+        <RadioGroup
+            android:id="@+id/radioGroupMovement"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="16dp">
+
+            <RadioButton
+                android:id="@+id/radioButtonMin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Minimum Change (0.0001)" />
+
+            <RadioButton
+                android:id="@+id/radioButtonDefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:text="Default Change (0.00025)" />
+
+            <RadioButton
+                android:id="@+id/radioButtonMax"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Maximum Change (0.0005)" />
+        </RadioGroup>
+
+    </LinearLayout>
 </RelativeLayout>

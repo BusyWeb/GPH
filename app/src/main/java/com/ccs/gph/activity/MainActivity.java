@@ -3,18 +3,23 @@ package com.ccs.gph.activity;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.GeomagneticField;
+import android.location.Address;
 import android.location.Criteria;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationProvider;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.IdRes;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -29,6 +34,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,6 +51,7 @@ import com.ccs.gph.util.GeneralHelper;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
     Button btnStart, btnStop;
@@ -85,6 +93,10 @@ public class MainActivity extends AppCompatActivity {
     private static EditText editTextChangeAmount;
     private static CheckBox checkBoxChangeAmount;
 
+    private static EditText editTextAddress;
+    private static Button buttonSetAddress;
+    private static RadioGroup radioGroupMovement;
+    private static RadioButton radioMin, radioDefault, radioMax;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         AppShared.gContext = this;
         AppShared.gActivity = this;
 
+        GeneralHelper.LoadPreferences(this);
 
         mApp = (ApplicationSingletonGPS)getApplicationContext();
         //mApp = ApplicationSingletonGPS.getInstance();
@@ -111,6 +124,25 @@ public class MainActivity extends AppCompatActivity {
                 //android.os.Process.killProcess(android.os.Process.myPid());
                 //System.exit(1);
                 //mApp.mockLocation();
+
+                checkLocationValues();
+
+                // check developer mock settings
+                boolean isMockOn = ApplicationSingletonGPS.isMockSettingsON(mActivity);
+                boolean isMockPermission = ApplicationSingletonGPS.areThereMockPermissionApps(mActivity);
+
+                if (!isMockOn) {
+                    // Developer settings
+                    Intent intent = new Intent();
+                    intent.setClassName("com.android.settings", "com.android.settings.DevelopmentSettings");
+                    mActivity.startActivity(intent);
+                    return;
+                }
+                if (!isMockPermission) {
+                    // not showing the mock_location permision
+                }
+
+
 
                 if (switchMethod.isChecked()) {
                     startLocationMock();
@@ -160,15 +192,146 @@ public class MainActivity extends AppCompatActivity {
         editTextChangeAmount = (EditText) findViewById(R.id.editTextChangeAmount);
         checkBoxChangeAmount = (CheckBox) findViewById(R.id.checkBoxEnableChangeAmount);
 
-        checkLocationValues();
+
+        editTextAddress = (EditText) findViewById(R.id.editTextAddress);
+        buttonSetAddress = (Button) findViewById(R.id.buttonSetAddress);
+        buttonSetAddress.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String address = editTextAddress.getText().toString();
+                if (address == null || address.length() < 1) {
+                    Toast.makeText(mContext, "Address required!", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                new SaveAddressLocationTask().execute(address);
+            }
+        });
+
+        if (AppShared.PrefAddress != null && AppShared.PrefAddress.length() > 1) {
+            editTextAddress.setText(AppShared.PrefAddress);
+            editLatitude.setText(String.valueOf(AppShared.PrefAddressLatitude));
+            editLongitude.setText(String.valueOf(AppShared.PrefAddressLongitude));
+        }
+
+        radioGroupMovement = (RadioGroup) findViewById(R.id.radioGroupMovement);
+        radioMin = (RadioButton) findViewById(R.id.radioButtonMin);
+        radioMax = (RadioButton) findViewById(R.id.radioButtonMax);
+        radioDefault = (RadioButton) findViewById(R.id.radioButtonDefault);
+
+        int radioId = radioDefault.getId();
+        if (AppShared.PrefMovementMagnitude.equalsIgnoreCase("min")) {
+            radioId = radioMin.getId();
+            editTextChangeAmount.setText("0.0001");
+        } else if (AppShared.PrefMovementMagnitude.equalsIgnoreCase("max")) {
+            radioId = radioMax.getId();
+            editTextChangeAmount.setText("0.0005");
+        } else if (AppShared.PrefMovementMagnitude.equalsIgnoreCase("default")) {
+            radioId = radioDefault.getId();
+            editTextChangeAmount.setText("0.00025");
+        }
+        radioGroupMovement.check(radioId);
+        radioGroupMovement.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, @IdRes int checkedId) {
+                try {
+                    String value = "default";
+
+                    if (checkedId == radioMin.getId()) {
+                        value = "min";
+                        editTextChangeAmount.setText("0.0001");
+                    } else if (checkedId == radioMax.getId()) {
+                        value = "max";
+                        editTextChangeAmount.setText("0.0005");
+                    } else {
+                        editTextChangeAmount.setText("0.00025");
+                    }
+
+                    GeneralHelper.SavePreference(mContext, AppShared.PREF_MOVEMENT_MAGNITUDE_KEY, value);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+
+        //checkLocationValues();
 
         checkPermissions();
     }
 
+    private class SaveAddressLocationTask extends AsyncTask<String, Void, Boolean> {
+
+        private ProgressDialog mProgress = null;
+        private String mAddress = "";
+        //private double mLat = 0d;
+        //private double mLng = 0d;
+
+        @Override
+        protected void onPreExecute() {
+            try {
+                mProgress = new ProgressDialog(mContext);
+                mProgress.setMessage("Loading location...");
+                mProgress.show();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            boolean success = false;
+
+            try {
+                mAddress = params[0];
+
+                Geocoder geocoder = new Geocoder(mContext);
+                List<Address> addresses = geocoder.getFromLocationName(mAddress, 5);
+                Address location = addresses.get(0);
+                if (location != null) {
+                    mLatitude = location.getLatitude();
+                    mLongitude = location.getLongitude();
+                    success = true;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return success;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            try {
+                if (mProgress != null && mProgress.isShowing()) {
+                    mProgress.dismiss();
+                }
+
+                mProgress = null;
+                if (result) {
+                    GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_KEY, mAddress);
+                    GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_LATITUDE_KEY, String.valueOf(mLatitude));
+                    GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_LONGITUDE_KEY, String.valueOf(mLongitude));
+
+
+                    editLatitude.setText(String.valueOf(mLatitude));
+                    editLongitude.setText(String.valueOf(mLongitude));
+                } else {
+                    Toast.makeText(mContext, "Failed to get location from address...", Toast.LENGTH_LONG).show();
+                }
+
+                checkLocationValues();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private void checkLocationValues() {
         try {
+
             String lat = editLatitude.getText().toString();
             String lng = editLongitude.getText().toString();
+
             if (lat == null || lng == null || lat.length() < 1 || lng.length() < 1) {
                 mHasMockLocation = false;
                 mLatitude = 0.0d;
@@ -453,16 +616,27 @@ public class MainActivity extends AppCompatActivity {
 
                         editLatitude.setEnabled(false);
                         editLongitude.setEnabled(false);
-                        editTextChangeAmount.setEnabled(false);
-                        checkBoxChangeAmount.setEnabled(false);
+                        //editTextChangeAmount.setEnabled(false);
+                        //checkBoxChangeAmount.setEnabled(false);
+
+                        editTextAddress.setEnabled(false);
+                        buttonSetAddress.setEnabled(false);
+                        radioGroupMovement.setEnabled(false);
+                        radioMin.setEnabled(false);
+                        radioMax.setEnabled(false);
+                        radioDefault.setEnabled(false);
                     } else {
                         btnStart.setEnabled(true);
                         btnStop.setEnabled(false);
                         buttonSetLocation.setEnabled(true);
                         editLatitude.setEnabled(true);
                         editLongitude.setEnabled(true);
-                        editTextChangeAmount.setEnabled(true);
-                        checkBoxChangeAmount.setEnabled(true);
+                        //editTextChangeAmount.setEnabled(true);
+                        //checkBoxChangeAmount.setEnabled(true);
+                        radioGroupMovement.setEnabled(true);
+                        radioMin.setEnabled(true);
+                        radioMax.setEnabled(true);
+                        radioDefault.setEnabled(true);
                         if (mHasMockLocation) {
                             latitude.setText(String.valueOf(mLatitude));
                             longitude.setText(String.valueOf(mLongitude));
@@ -470,6 +644,9 @@ public class MainActivity extends AppCompatActivity {
                             latitude.setText("0.0");
                             longitude.setText("0.0");
                         }
+
+                        editTextAddress.setEnabled(true);
+                        buttonSetAddress.setEnabled(true);
                     }
                 }
             });

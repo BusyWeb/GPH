@@ -25,4 +25,14 @@ public class AppShared {
     public static final String DATA_FORMAT_CSV = "csv";
     public static final String DATA_FORMAT_JSON = "json";
 
+
+    public static final String PREF_ADDRESS_KEY = "pref_address_key";
+    public static final String PREF_ADDRESS_LATITUDE_KEY = "pref_address_latitude_key";
+    public static final String PREF_ADDRESS_LONGITUDE_KEY = "pref_address_longitude_key";
+    public static final String PREF_MOVEMENT_MAGNITUDE_KEY = "pref_movement_magnitude_key";
+
+    public static String PrefAddress = "";
+    public static double PrefAddressLatitude = 0d;
+    public static double PrefAddressLongitude = 0d;
+    public static String PrefMovementMagnitude = "min";
 }
