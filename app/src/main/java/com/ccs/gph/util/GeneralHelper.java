@@ -6,6 +6,8 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
 
 import com.ccs.gph.gps.AppGps;
@@ -68,6 +70,22 @@ public class GeneralHelper {
     public static Boolean IsGPSAvailable(Context context){
         PackageManager packageManager = context.getPackageManager();
         return packageManager.hasSystemFeature(PackageManager.FEATURE_LOCATION);
+    }
+
+    public static boolean IsOnline(Context ctx){
+        try {
+            ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+            //return cm.getActiveNetworkInfo().isConnectedOrConnecting();
+            NetworkInfo ni = cm.getActiveNetworkInfo();
+            if (ni != null && ni.isConnected()){
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public static boolean IsNullOrEmpty(Object object) {

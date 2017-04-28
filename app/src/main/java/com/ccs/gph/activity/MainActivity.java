@@ -133,10 +133,10 @@ public class MainActivity extends AppCompatActivity {
 
                 if (!isMockOn) {
                     // Developer settings
-                    Intent intent = new Intent();
-                    intent.setClassName("com.android.settings", "com.android.settings.DevelopmentSettings");
-                    mActivity.startActivity(intent);
-                    return;
+//                    Intent intent = new Intent();
+//                    intent.setClassName("com.android.settings", "com.android.settings.DevelopmentSettings");
+//                    mActivity.startActivity(intent);
+//                    return;
                 }
                 if (!isMockPermission) {
                     // not showing the mock_location permision
@@ -201,6 +201,10 @@ public class MainActivity extends AppCompatActivity {
                 String address = editTextAddress.getText().toString();
                 if (address == null || address.length() < 1) {
                     Toast.makeText(mContext, "Address required!", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (!GeneralHelper.IsOnline(mContext)) {
+                    Toast.makeText(mContext, "Off-line, please check network.", Toast.LENGTH_LONG).show();
                     return;
                 }
                 new SaveAddressLocationTask().execute(address);
