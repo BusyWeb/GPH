@@ -181,15 +181,17 @@
             android:layout_height="wrap_content"
             android:text="Set Location By Address" />
     </LinearLayout>
+
     <Switch
         android:id="@+id/switchMethod"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Use GPS Simulation Method"
         android:layout_alignBaseline="@+id/btnStop"
         android:layout_alignBottom="@+id/btnStop"
         android:layout_alignParentEnd="true"
-        android:layout_alignStart="@+id/linearLayout2" />
+        android:layout_alignStart="@+id/linearLayout2"
+        android:enabled="false"
+        android:text="Use GPS Simulation Method" />
 
     <LinearLayout
         android:layout_width="match_parent"

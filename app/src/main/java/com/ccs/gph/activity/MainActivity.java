@@ -480,6 +480,10 @@ public class MainActivity extends AppCompatActivity {
     private void prepareApp() {
         try {
 
+            // debug: remove locationmanager start up to test Google Map mock location issue
+            if (true) {
+                return;
+            }
             if (useSampleGpsData) {
                 appGpsSample = GeneralHelper.LoadSampleGpsData(this);
             }
