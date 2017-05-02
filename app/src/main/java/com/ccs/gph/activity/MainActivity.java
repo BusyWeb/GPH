@@ -366,7 +366,8 @@ public class MainActivity extends AppCompatActivity {
             int permission = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     + ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET)
                     + ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                    + + ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION);
+                    + ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    + ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_SECURE_SETTINGS);
             if (permission == PackageManager.PERMISSION_GRANTED) {
 
                 prepareApp();
@@ -380,11 +381,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    final String[] permissions = new String[]{
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.INTERNET,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION};
+    final String[] permissions = new String[]
+            {
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.INTERNET,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.WRITE_SETTINGS
+            };
 
     private void requestPermissions() {
         try {
@@ -400,7 +404,8 @@ public class MainActivity extends AppCompatActivity {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.INTERNET)
                     || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                    || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_SETTINGS)) {
 
                 Snackbar.make(this.getWindow().getDecorView(), "Storage, internet, and location permission required.",
                         Snackbar.LENGTH_INDEFINITE)
@@ -428,7 +433,11 @@ public class MainActivity extends AppCompatActivity {
             boolean internet = grantResults[1] == PackageManager.PERMISSION_GRANTED;
             boolean locationFine = grantResults[2] == PackageManager.PERMISSION_GRANTED;
             boolean locationCoarse = grantResults[3] == PackageManager.PERMISSION_GRANTED;
+            boolean secureSettings = grantResults[4] == PackageManager.PERMISSION_GRANTED;
 
+            if (!secureSettings) {
+                Log.d(TAG, "Secure settings required.");
+            }
             if (locationFine) {
                 Log.d(TAG, "Storage write permission granted.");
 
@@ -990,7 +999,7 @@ public class MainActivity extends AppCompatActivity {
                             false,
                             false,
                             android.location.Criteria.POWER_LOW,
-                            android.location.Criteria.ACCURACY_FINE
+                            Criteria.ACCURACY_FINE
                     );
 
             locationMgr.setTestProviderEnabled(strProvider, true);

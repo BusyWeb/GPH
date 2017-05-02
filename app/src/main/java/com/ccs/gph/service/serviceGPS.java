@@ -17,6 +17,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
+import android.os.SystemClock;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 
@@ -175,11 +177,13 @@ public class serviceGPS extends Service {
 
             locationMockStarted = true;
 
+            updateMockLocation();
+
             if (mMockLocationRun != null) {
                 MockLocationHandler.sendEmptyMessage(-1);
             }
             mMockLocationRun = new MockLocationRun();
-            MockLocationHandler.postDelayed(mMockLocationRun, 1000);
+            MockLocationHandler.postDelayed(mMockLocationRun, 100);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -208,7 +212,7 @@ public class serviceGPS extends Service {
 
             mLocationManager.addTestProvider
                     (
-                            mProvider,
+                            LocationManager.GPS_PROVIDER,
                             false,
                             false,
                             false,
@@ -216,11 +220,63 @@ public class serviceGPS extends Service {
                             false,
                             false,
                             false,
-                            android.location.Criteria.POWER_LOW,
-                            android.location.Criteria.ACCURACY_FINE
+                            Criteria.POWER_LOW,
+                            Criteria.ACCURACY_FINE
                     );
+            mLocationManager.addTestProvider
+                    (
+                            LocationManager.NETWORK_PROVIDER,
+                            false,
+                            false,
+                            false,
+                            false,
+                            false,
+                            false,
+                            false,
+                            Criteria.POWER_LOW,
+                            Criteria.ACCURACY_COARSE
+                    );
+//            mLocationManager.addTestProvider
+//                    (
+//                            LocationManager.PASSIVE_PROVIDER,
+//                            false,
+//                            false,
+//                            false,
+//                            false,
+//                            false,
+//                            false,
+//                            false,
+//                            android.location.Criteria.POWER_LOW,
+//                            Criteria.ACCURACY_HIGH
+//                    );
 
-            mLocationManager.setTestProviderEnabled(mProvider, true);
+
+            mLocationManager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true);
+            mLocationManager.setTestProviderEnabled(LocationManager.NETWORK_PROVIDER, true);
+            //mLocationManager.setTestProviderEnabled(LocationManager.PASSIVE_PROVIDER, true);
+            mLocationManager.setTestProviderStatus(LocationManager.GPS_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+            mLocationManager.setTestProviderStatus(LocationManager.NETWORK_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+
+            mMockLocation = new Location(LocationManager.GPS_PROVIDER);
+            mMockLocation2 = new Location(LocationManager.NETWORK_PROVIDER);
+
+            mMockLocation.setLatitude(mLatitudeLast);
+            mMockLocation.setLongitude(mLongitudeLast);
+            mMockLocation.setAccuracy(1f);
+            mMockLocation.setTime(System.currentTimeMillis());
+            mMockLocation.setElapsedRealtimeNanos(System.nanoTime());
+
+            mMockLocation2.setLatitude(mLatitudeLast);
+            mMockLocation2.setLongitude(mLongitudeLast);
+            mMockLocation2.setAccuracy(1f);
+            mMockLocation2.setTime(System.currentTimeMillis());
+            mMockLocation2.setElapsedRealtimeNanos(System.nanoTime());
+
+            mLocationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, mMockLocation);
+            mLocationManager.setTestProviderLocation(LocationManager.NETWORK_PROVIDER, mMockLocation2);
+
+            //setSecureSetting();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -232,6 +288,11 @@ public class serviceGPS extends Service {
                 mLocationManager.clearTestProviderLocation(mProvider);
                 mLocationManager.clearTestProviderEnabled(mProvider);
                 mLocationManager.removeTestProvider(mProvider);
+            }
+            if (mLocationManager.getProvider(LocationManager.NETWORK_PROVIDER) != null) {
+                mLocationManager.clearTestProviderLocation(LocationManager.NETWORK_PROVIDER);
+                mLocationManager.clearTestProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                mLocationManager.removeTestProvider(LocationManager.NETWORK_PROVIDER);
             }
 
             mLocationManager = null;
@@ -245,11 +306,12 @@ public class serviceGPS extends Service {
     private static Long mLastLocationCheckTime = 0L;
     private static boolean locationMockStarted = false;
     private static MockLocationRun mMockLocationRun = null;
-    private final static String mProvider = "gps";
+    private final static String mProvider = LocationManager.GPS_PROVIDER;   //"gps";
     private static LocationManager mLocationManager = null;
     private static double mChangeAmount;
     private static boolean mChangeAmountEnabled = false;
     private static Location mMockLocation = null;
+    private static Location mMockLocation2 = null;
 
     public class MockLocationRun implements Runnable {
 
@@ -297,7 +359,16 @@ public class serviceGPS extends Service {
         }
     };
 
-
+    private void setSecureSetting() {
+        try {
+            int mock = Settings.Secure.getInt(mContext.getContentResolver(), "mock_location");
+            if (true) {
+                //Settings.Secure.putInt(mContext.getContentResolver(), "mock_location", 1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private void setRandomLocationValue(Location location) {
         try {
@@ -357,9 +428,11 @@ public class serviceGPS extends Service {
 //            location.setAccuracy(10f);
 //            location.setAltitude(100f);
 
-            mLocationManager.setTestProviderStatus(mProvider, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
-            mLocationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location);
-
+//            mLocationManager.setTestProviderEnabled(mProvider, true);
+//
+//            mLocationManager.setTestProviderStatus(mProvider, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+//            mLocationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location);
+//
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -367,8 +440,8 @@ public class serviceGPS extends Service {
 
     private void updateMockLocation() {
         try {
-            //Location mockLocation = new Location(mProvider); // a string
-            mMockLocation = new Location(mProvider); // a string
+            mMockLocation = new Location(LocationManager.GPS_PROVIDER);
+            mMockLocation2 = new Location(LocationManager.NETWORK_PROVIDER);
 
             mLatitude = mMockLocation.getLatitude();
             mLongitude = mMockLocation.getLongitude();
@@ -378,17 +451,92 @@ public class serviceGPS extends Service {
                 mMockLocation.setLongitude(mLongitudeLast);
                 mMockLocation.setLatitude(mLatitudeLast);
             }
-            mMockLocation.setAccuracy(10f);
-            mMockLocation.setAltitude(100f);
-            mMockLocation.setTime(System.currentTimeMillis());
-            mMockLocation.setElapsedRealtimeNanos(System.nanoTime());
-            mMockLocation.setAccuracy(Criteria.ACCURACY_HIGH);
+            //setRandomLocationValue(mMockLocation);
 
-            setRandomLocationValue(mMockLocation);
+            double random = 1.0d - (2.0d * Math.random());
+            double sqrt = (Math.random() > 0.499d ? 1.0d : -1.0d) * Math.sqrt(1.0d - (random * random));
+
+            // check manual position change amount
+            if (mChangeAmountEnabled) {
+                if (mLatitudeLast == 0) {
+                    mLatitudeLast = (random * (1) + mMockLocation.getLongitude());
+                }
+                if (mLongitudeLast == 0) {
+                    mLongitudeLast = (sqrt * ((1) + mMockLocation.getLatitude()));
+                }
+                Random rad = new Random();
+                int direction = rad.nextInt(8);
+                if (direction == 0) {
+                    mLongitudeLast += mChangeAmount;
+                } else if (direction == 1) {
+                    mLatitudeLast += mChangeAmount;
+                } else if (direction == 2) {
+                    mLongitudeLast -= mChangeAmount;
+                } else if (direction == 3) {
+                    mLatitudeLast -= mChangeAmount;
+                } else if (direction == 4) {
+                    mLongitudeLast += mChangeAmount;
+                    mLatitudeLast += mChangeAmount;
+                } else if (direction == 5) {
+                    mLongitudeLast -= mChangeAmount;
+                    mLatitudeLast += mChangeAmount;
+                } else if (direction == 6) {
+                    mLongitudeLast -= mChangeAmount;
+                    mLatitudeLast -= mChangeAmount;
+                } else if (direction == 7) {
+                    mLongitudeLast += mChangeAmount;
+                    mLatitudeLast -= mChangeAmount;
+                }
+
+                mMockLocation.setLongitude(mLongitudeLast);
+                mMockLocation.setLatitude(mLatitudeLast);
+
+
+            } else {
+
+                if (mHasMockLocation) {
+                    mMockLocation.setLongitude((random +  + (int)mLongitudeLast + mMockLocation.getLongitude()));
+                    mMockLocation.setLatitude((sqrt + (int)mLatitudeLast + mMockLocation.getLatitude()));
+                } else {
+                    mMockLocation.setLongitude((random * (1) + mMockLocation.getLongitude()));
+                    mMockLocation.setLatitude((sqrt * ((1) + mMockLocation.getLatitude())));
+                }
+            }
+
+            mMockLocation.setAccuracy(1f);
+//            mMockLocation.setAltitude(10f);
+//            mMockLocation.setBearing(1f);
+//            mMockLocation.setSpeed(10f);
+            mMockLocation.setTime(System.currentTimeMillis());
+            mMockLocation.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+
+            mMockLocation2.setAccuracy(1f);
+//            mMockLocation2.setAltitude(10f);
+//            mMockLocation2.setBearing(1f);
+//            mMockLocation2.setSpeed(10f);
+            mMockLocation2.setTime(System.currentTimeMillis());
+            mMockLocation2.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+            mMockLocation2.setLongitude(mMockLocation.getLongitude());
+            mMockLocation2.setLatitude(mMockLocation.getLatitude());
+
+            mLocationManager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true);
+            mLocationManager.setTestProviderEnabled(LocationManager.NETWORK_PROVIDER, true);
+            //mLocationManager.setTestProviderEnabled(LocationManager.PASSIVE_PROVIDER, true);
+
+            mLocationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, mMockLocation);
+            mLocationManager.setTestProviderLocation(LocationManager.NETWORK_PROVIDER, mMockLocation2);
+            //mLocationManager.setTestProviderLocation(LocationManager.PASSIVE_PROVIDER, mMockLocation);
+
+            mLocationManager.setTestProviderStatus(LocationManager.GPS_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+            mLocationManager.setTestProviderStatus(LocationManager.NETWORK_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+            //mLocationManager.setTestProviderStatus(LocationManager.PASSIVE_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+
             updateMockLocationInfo(mMockLocation);
 
+            setSecureSetting();
+
         } catch (Exception e) {
-            e.printStackTrace();
+             e.printStackTrace();
         }
     }
 
