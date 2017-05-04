@@ -540,18 +540,33 @@ public class GphActivity extends AppCompatActivity
                 } else {
                     if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                             && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        mLatitude = 0;
-                        mLongitude = 0;
-                    } else {
-                        if (mLocationManager == null) {
-                            mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-                        }
-                        Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                        mLatitude = location.getLatitude();
-                        mLongitude = location.getLongitude();
+                        mLatitude = 34.0522342;
+                        mLongitude = -118.2436849;
+                        mMapAddress = "Los Angeles, CA";
                         setMarker(new LatLng(mLatitude, mLongitude));
+                        updateUi();
+                    } else {
+                        if (!mLoadFromActivityResult) {
+                            if (mLocationManager == null) {
+                                mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                            }
+                            Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            if (location == null) {
+                                mLatitude = 34.0522342;
+                                mLongitude = -118.2436849;
+                                mMapAddress = "Los Angeles, CA";
+                            } else {
+                                mLatitude = location.getLatitude();
+                                mLongitude = location.getLongitude();
+                            }
+                            setMarker(new LatLng(mLatitude, mLongitude));
+                        } else {
+                            setMarker(new LatLng(mLatitude, mLongitude));
+                            updateUi();
+                        }
                     }
                 }
+                updateUi();
 
             } catch (Exception e) {
 
@@ -590,6 +605,8 @@ public class GphActivity extends AppCompatActivity
                 if (mMarker != null) {
                     mMarker.hideInfoWindow();
                 }
+
+                GeneralHelper.CheckAndCreateAppFolders();
 
                 final MyLocationData dataItem = new MyLocationData();
                 dataItem.Id = UUID.randomUUID().toString();
