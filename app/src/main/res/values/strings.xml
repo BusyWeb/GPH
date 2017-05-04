@@ -1,3 +1,137 @@
 <resources>
     <string name="app_name">GPH</string>
+    <string name="title_activity_gph">GPH</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+    <string name="pref_header_location">Location (GPS)</string>
+    <string name="pref_random_movement_description">Enable and disable location (gps) movement randomly by user settings.</string>
+    <string name="pref_random_movement_title">Enable location movement</string>
+
+    <string name="pref_location_change_interval_title">GPS change interval</string>
+    <string-array name="pref_location_change_interval_list_titles">
+        <item>1 sec.</item>
+        <item>2 sec.</item>
+        <item>5 sec.</item>
+        <item>10 sec.</item>
+        <item>30 sec.</item>
+        <item>1 min.</item>
+        <item>5 min.</item>
+        <item>10 min.</item>
+        <item>30 min.</item>
+        <item>1 hour.</item>
+    </string-array>
+    <string-array name="pref_location_change_interval_list_values">
+        <item>1000</item>
+        <item>2000</item>
+        <item>5000</item>
+        <item>10000</item>
+        <item>30000</item>
+        <item>60000</item>
+        <item>300000</item>
+        <item>600000</item>
+        <item>1800000</item>
+        <item>3600000</item>
+    </string-array>
+
+    <string name="pref_location_change_distance_title">GPS change distance</string>
+    <string-array name="pref_location_change_distance_list_titles">
+        <item>0.00005 (5-10 meters)</item>
+        <item>0.0001 (5-15 meters)</item>
+        <item>0.0002 (10-25 meters)</item>
+        <item>0.001 (50-100 meters)</item>
+    </string-array>
+    <string-array name="pref_location_change_distance_list_values">
+        <item>00005</item>
+        <item>0001</item>
+        <item>0002</item>
+        <item>001</item>
+    </string-array>
+
+    <string name="pref_header_app_setting">App and Notification</string>
+    <string name="pref_app_close_description">Close main app when location (gps) service started.</string>
+    <string name="pref_app_close_title">Close main app</string>
+
+    <string name="pref_map_show_movement_description">Move location icon on main map by the location (gps) movements.</string>
+    <string name="pref_map_show_movement_title">Move location icon</string>
+
+    <string name="pref_show_notification_description">Show notification when location (gps) service started.</string>
+    <string name="pref_show_notification_title">Show notification</string>
+
+
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+    <string name="pref_title_social_recommendations">Enable social recommendations</string>
+    <string name="pref_description_social_recommendations">Recommendations for people to contact
+        based on your message history
+    </string>
+
+    <string name="pref_title_display_name">Display name</string>
+    <string name="pref_default_display_name">John Smith</string>
+
+    <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
+    <string-array name="pref_example_list_titles">
+        <item>Always</item>
+        <item>When possible</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_example_list_values">
+        <item>1</item>
+        <item>0</item>
+        <item>-1</item>
+    </string-array>
+
+    <!-- Example settings for Data & Sync -->
+    <string name="pref_header_data_sync">Data &amp; sync</string>
+
+    <string name="pref_title_sync_frequency">Sync frequency</string>
+    <string-array name="pref_sync_frequency_titles">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>180</item>
+        <item>360</item>
+        <item>-1</item>
+    </string-array>
+
+    <string-array name="list_preference_entries">
+        <item>Entry 1</item>
+        <item>Entry 2</item>
+        <item>Entry 3</item>
+    </string-array>
+
+    <string-array name="list_preference_entry_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="multi_select_list_preference_default_value" />
+
+    <string name="pref_title_system_sync_settings">System sync settings</string>
+
+    <!-- Example settings for Notifications -->
+    <string name="pref_header_notifications">Notifications</string>
+
+    <string name="pref_title_new_message_notifications">New message notifications</string>
+
+    <string name="pref_title_ringtone">Ringtone</string>
+    <string name="pref_ringtone_silent">Silent</string>
+
+    <string name="pref_title_vibrate">Vibrate</string>
 </resources>

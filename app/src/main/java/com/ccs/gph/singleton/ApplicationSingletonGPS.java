@@ -1,5 +1,6 @@
 package com.ccs.gph.singleton;
 
+import android.app.AppOpsManager;
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -9,6 +10,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 //import android.support.v4.app.ActivityCompat;
@@ -17,6 +19,8 @@ import android.provider.Settings;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.ccs.gph.BuildConfig;
 
 import java.util.List;
 
@@ -135,12 +139,29 @@ public class ApplicationSingletonGPS extends Application implements LocationList
 
 
     public static boolean isMockSettingsON(Context context) {
-        // returns true if mock location enabled, false if not enabled.
-        if (Settings.Secure.getString(context.getContentResolver(),
-                Settings.Secure.ALLOW_MOCK_LOCATION).equals("0"))
-            return false;
-        else
-            return true;
+        boolean isMockOn = false;
+        try {
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            {
+                AppOpsManager opsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
+                isMockOn = (opsManager.checkOp(AppOpsManager.OPSTR_MOCK_LOCATION, android.os.Process.myUid(), BuildConfig.APPLICATION_ID)== AppOpsManager.MODE_ALLOWED);
+            }
+            else
+            {
+                // in marshmallow this will always return true
+                isMockOn = !android.provider.Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ALLOW_MOCK_LOCATION).equals("0");
+            }
+        } catch (Exception e) {
+            isMockOn = false;
+        }
+        return isMockOn;
+
+//        // returns true if mock location enabled, false if not enabled.
+//        if (Settings.Secure.getString(context.getContentResolver(),
+//                Settings.Secure.ALLOW_MOCK_LOCATION).equals("0"))
+//            return false;
+//        else
+//            return true;
     }
 
     public static boolean areThereMockPermissionApps(Context context) {

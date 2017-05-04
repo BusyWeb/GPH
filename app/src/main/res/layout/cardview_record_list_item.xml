@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_view_main"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    android:orientation="horizontal"
+    android:theme="@style/CardView.Light"
+    card_view:cardBackgroundColor="#ffffff"
+    card_view:cardCornerRadius="4dp"
+    card_view:cardElevation="4dp"
+    card_view:cardUseCompatPadding="true">
+
+    <LinearLayout
+        android:id="@+id/card_view_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+
+        <LinearLayout
+            android:id="@+id/layoutFileName"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_toRightOf="@+id/layoutImageContainer"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/textViewItemTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignTop="@+id/layoutImageContainer"
+                android:layout_weight="1"
+                android:text="File name"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#606060"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/textViewDow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/layoutFileDate"
+                android:layout_alignLeft="@+id/layoutFileName"
+                android:text="Dow"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#606060"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/layoutImageContainer"
+            android:layout_width="match_parent"
+            android:layout_height="144dp"
+            android:layout_marginTop="8dp"
+            android:background="#eeeeee"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/myImageView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:scaleType="centerCrop" />
+
+            <ProgressBar
+                android:id="@+id/progressBarLoading"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1" />
+
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutFileDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textViewItemDateTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/layoutImageContainer"
+                android:layout_marginLeft="8dp"
+                android:layout_weight="1"
+                android:text="Modified Date"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#606060"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/buttonDetails"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:background="@android:color/transparent"
+                android:text="Details.."
+                android:textColor="#606060"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/imageViewDelete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="false"
+                android:layout_alignParentTop="false"
+                android:layout_alignTop="@+id/layoutImageContainer"
+                android:layout_gravity="right|center_vertical"
+                android:src="@drawable/ic_action_discard_dark" />
+
+        </LinearLayout>
+
+        <!--android:background="@drawable/btn_background_nb"--><![CDATA[
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@mipmap/ic_action_share"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignTop="@+id/imgFileDelete"
+        android:layout_marginRight="@dimen/width_80"
+        android:layout_alignRight="@+id/imgFileDelete"
+        android:layout_alignParentBottom="true"
+        android:tint="@color/bw60"
+        android:alpha="0.4" />
+
+        ]]>
+    </LinearLayout>
+
+</android.support.v7.widget.CardView>

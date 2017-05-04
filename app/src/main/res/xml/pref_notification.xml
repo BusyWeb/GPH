@@ -1,0 +1,23 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- A 'parent' preference, which enables/disables child preferences (below)
+         when checked/unchecked. -->
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="pref_map_app_close"
+        android:summary="@string/pref_app_close_description"
+        android:title="@string/pref_app_close_title" />
+
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="pref_map_show_movement"
+        android:summary="@string/pref_map_show_movement_description"
+        android:title="@string/pref_map_show_movement_title" />
+
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="pref_show_notification"
+        android:summary="@string/pref_show_notification_description"
+        android:title="@string/pref_show_notification_title" />
+
+</PreferenceScreen>

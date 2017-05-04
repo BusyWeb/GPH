@@ -21,8 +21,10 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 import com.ccs.gph.R;
+import com.ccs.gph.activity.GphActivity;
 import com.ccs.gph.activity.MainActivity;
 import com.ccs.gph.util.AppShared;
 
@@ -117,12 +119,13 @@ public class serviceGPS extends Service {
             if (mNM != null) {
                 mNM.cancel(NOTIFICATION);
             }
-            if (mWakeLock != null) {
-                mWakeLock.release();
-            }
-
             stopMockService();
 
+            if (mWakeLock != null) {
+                if (mWakeLock.isHeld()) {
+                    mWakeLock.release();
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -284,6 +287,9 @@ public class serviceGPS extends Service {
 
     private void stopLocationManager() {
         try {
+            if (mLocationManager == null) {
+                return;
+            }
             if (mLocationManager.getProvider(mProvider) != null) {
                 mLocationManager.clearTestProviderLocation(mProvider);
                 mLocationManager.clearTestProviderEnabled(mProvider);
@@ -312,6 +318,20 @@ public class serviceGPS extends Service {
     private static boolean mChangeAmountEnabled = false;
     private static Location mMockLocation = null;
     private static Location mMockLocation2 = null;
+
+    public static Location GetMockLocation() {
+        return mMockLocation;
+    }
+
+    public interface IMockLocationEvent {
+        public void MockLocationChanged(Location location);
+    }
+
+    private static IMockLocationEvent mMockLocationEvent;
+
+    public static void SetMockLocatoinEvent(IMockLocationEvent mockLocationEvent) {
+        mMockLocationEvent = mockLocationEvent;
+    }
 
     public class MockLocationRun implements Runnable {
 
@@ -348,7 +368,7 @@ public class serviceGPS extends Service {
 
 
                 int nextCheck = 0;
-                nextCheck = 1000 - (int) (new Date().getTime() - mLastLocationCheckTime);
+                nextCheck = (int)AppShared.PrefLocationChangeInterval - (int) (new Date().getTime() - mLastLocationCheckTime);
                 if (nextCheck < 0) {
                     nextCheck = 0;
                 }
@@ -456,6 +476,33 @@ public class serviceGPS extends Service {
             double random = 1.0d - (2.0d * Math.random());
             double sqrt = (Math.random() > 0.499d ? 1.0d : -1.0d) * Math.sqrt(1.0d - (random * random));
 
+
+            // debug for new coordinates by distance
+            //x2=x1+d×cosθ,y2=y1+d×sinθ,
+//            double x = mMockLocation.getLatitude();
+//            double y = mMockLocation.getLongitude();
+//            double distance = 0.0001;   // meters
+//            double x2 = x + distance;   // * Math.cos(90);
+//            double y2 = y + distance;   // * Math.sin(90);
+//
+//            float[] d = new float[3];
+//            Location.distanceBetween(x, y, x2, y2, d);
+//
+//            Log.i("DBG", String.valueOf(x) + ", " + String.valueOf(y) + " >> " + String.valueOf(x2) + ", " + String.valueOf(y2)
+//                    + " :: " + String.valueOf(d[0]));
+            // Earth's equatorial radius equals 6,378,137 m
+            // Earth's average meridional radius is 6,367,449 m
+            // one latitudinal second measures 30.715 metres, one latitudinal minute is 1843 metres and one latitudinal degree is 110.6 kilometres
+            // one longitudinal second measures 30.92 metres, a longitudinal minute is 1855 metres and a longitudinal degree is 111.3 kilometres
+            // Longitudinal length equivalents at selected latitudes
+            //            Latitude	        City	            Degree	    Minute	    Second	    ±0.0001°
+            //            60°	            Saint Petersburg	55.80 km	0.930 km	15.50 m	    5.58 m
+            //            51° 28′ 38″ N	    Greenwich	        69.47 km	1.158 km	19.30 m	    6.95 m
+            //            45°	            Bordeaux	        78.85 km	1.31 km	    21.90 m	    7.89 m
+            //            30°	            New Orleans	        96.49 km	1.61 km	    26.80 m	    9.65 m
+            //            0°	            Quito	            111.3 km	1.855 km	30.92 m	    11.13 m
+
+
             // check manual position change amount
             if (mChangeAmountEnabled) {
                 if (mLatitudeLast == 0) {
@@ -465,42 +512,63 @@ public class serviceGPS extends Service {
                     mLongitudeLast = (sqrt * ((1) + mMockLocation.getLatitude()));
                 }
                 Random rad = new Random();
-                int direction = rad.nextInt(8);
+                int direction = rad.nextInt(32);
+                direction /= 4;
+                double diagonal = Math.abs(mChangeAmount * Math.sin(45));
+
                 if (direction == 0) {
                     mLongitudeLast += mChangeAmount;
+                    mMockLocation.setBearing(0);
                 } else if (direction == 1) {
                     mLatitudeLast += mChangeAmount;
+                    mMockLocation.setBearing(90);
                 } else if (direction == 2) {
                     mLongitudeLast -= mChangeAmount;
+                    mMockLocation.setBearing(180);
                 } else if (direction == 3) {
                     mLatitudeLast -= mChangeAmount;
+                    mMockLocation.setBearing(270);
                 } else if (direction == 4) {
-                    mLongitudeLast += mChangeAmount;
-                    mLatitudeLast += mChangeAmount;
+                    mLongitudeLast += diagonal;
+                    mLatitudeLast += diagonal;
+                    mMockLocation.setBearing(45);
                 } else if (direction == 5) {
-                    mLongitudeLast -= mChangeAmount;
-                    mLatitudeLast += mChangeAmount;
+                    mLongitudeLast -= diagonal;
+                    mLatitudeLast += diagonal;
+                    mMockLocation.setBearing(135);
                 } else if (direction == 6) {
-                    mLongitudeLast -= mChangeAmount;
-                    mLatitudeLast -= mChangeAmount;
+                    mLongitudeLast -= diagonal;
+                    mLatitudeLast -= diagonal;
+                    mMockLocation.setBearing(225);
                 } else if (direction == 7) {
-                    mLongitudeLast += mChangeAmount;
-                    mLatitudeLast -= mChangeAmount;
+                    mLongitudeLast += diagonal;
+                    mLatitudeLast -= diagonal;
+                    mMockLocation.setBearing(315);
                 }
 
                 mMockLocation.setLongitude(mLongitudeLast);
                 mMockLocation.setLatitude(mLatitudeLast);
 
+                mMockLocation2.setLongitude(mLongitudeLast);
+                mMockLocation2.setLatitude(mLatitudeLast);
+                mMockLocation2.setBearing(mMockLocation.getBearing());
 
             } else {
 
-                if (mHasMockLocation) {
-                    mMockLocation.setLongitude((random +  + (int)mLongitudeLast + mMockLocation.getLongitude()));
-                    mMockLocation.setLatitude((sqrt + (int)mLatitudeLast + mMockLocation.getLatitude()));
-                } else {
-                    mMockLocation.setLongitude((random * (1) + mMockLocation.getLongitude()));
-                    mMockLocation.setLatitude((sqrt * ((1) + mMockLocation.getLatitude())));
-                }
+//                if (mHasMockLocation) {
+//                    mMockLocation.setLongitude((random +  + (int)mLongitudeLast + mMockLocation.getLongitude()));
+//                    mMockLocation.setLatitude((sqrt + (int)mLatitudeLast + mMockLocation.getLatitude()));
+//                } else {
+//                    mMockLocation.setLongitude((random * (1) + mMockLocation.getLongitude()));
+//                    mMockLocation.setLatitude((sqrt * ((1) + mMockLocation.getLatitude())));
+//                }
+
+                mMockLocation.setLongitude(mLongitudeLast );
+                mMockLocation.setLatitude(mLatitudeLast);
+
+                mMockLocation2.setLongitude(mMockLocation.getLongitude());
+                mMockLocation2.setLatitude(mMockLocation.getLatitude());
+
             }
 
             mMockLocation.setAccuracy(1f);
@@ -531,6 +599,10 @@ public class serviceGPS extends Service {
             mLocationManager.setTestProviderStatus(LocationManager.NETWORK_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
             //mLocationManager.setTestProviderStatus(LocationManager.PASSIVE_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
 
+            if (mMockLocationEvent != null) {
+                mMockLocationEvent.MockLocationChanged(mMockLocation);
+            }
+
             updateMockLocationInfo(mMockLocation);
 
             setSecureSetting();
@@ -542,6 +614,10 @@ public class serviceGPS extends Service {
 
     private void updateMockLocationInfo(Location location) {
         try {
+            if (!AppShared.PrefShowNotification) {
+                return;
+            }
+
             // handle location data
 
             String msg = String.format("Latitude: %.6f, Longitude: %.6f", location.getLatitude(), location.getLongitude());
@@ -556,7 +632,7 @@ public class serviceGPS extends Service {
 
             // The PendingIntent to launch our activity if the user selects this
             // notification
-            Intent notificationIntent = new Intent(mContext, MainActivity.class);
+            Intent notificationIntent = new Intent(mContext, GphActivity.class);
             notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |  Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
             String title = mContext.getString(R.string.app_name);
