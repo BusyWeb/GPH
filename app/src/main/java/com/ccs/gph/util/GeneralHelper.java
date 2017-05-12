@@ -80,25 +80,32 @@ public class GeneralHelper {
             AppShared.PrefAddressLatitude = Double.parseDouble(prefs.getString(AppShared.PREF_ADDRESS_LATITUDE_KEY, "0"));
             AppShared.PrefAddressLongitude = Double.parseDouble(prefs.getString(AppShared.PREF_ADDRESS_LONGITUDE_KEY, "0"));
             AppShared.PrefMovementMagnitude = prefs.getString(AppShared.PREF_MOVEMENT_MAGNITUDE_KEY, "default");
+            AppShared.PrefMapZoom = prefs.getFloat(AppShared.PREF_MAP_ZOOM_KEY, 12f);
 
             AppShared.PrefRandomMovement = prefs.getBoolean(AppShared.PREF_RANDOM_MOVEMENT_KEY, true);
             AppShared.PrefLocationChangeInterval = Long.parseLong(prefs.getString(AppShared.PREF_LOCATION_CHANGE_INTERVAL, "1000"));
-            String distance = prefs.getString(AppShared.PREF_LOCATION_CHANGE_DISTANCE, "0001");
-            AppShared.PrefLocationChangeDistance = Double.parseDouble("0." + distance);
+            //String distance = prefs.getString(AppShared.PREF_LOCATION_CHANGE_DISTANCE, "0001");
+            //AppShared.PrefLocationChangeDistance = Double.parseDouble("0." + distance);
+            AppShared.PrefLocationChangeDistance = Double.parseDouble(prefs.getString(AppShared.PREF_LOCATION_CHANGE_DISTANCE, "0.0001"));
             AppShared.PrefMapAppClose = prefs.getBoolean(AppShared.PREF_MAP_APP_CLOSE, true);
             AppShared.PrefMapShowMovement = prefs.getBoolean(AppShared.PREF_MAP_SHOW_MOVEMENT, true);
             AppShared.PrefShowNotification = prefs.getBoolean(AppShared.PREF_SHOW_NOTIFICATION, true);
+            AppShared.PrefSensorMode = prefs.getBoolean(AppShared.PREF_SENSOR_MODE_KEY, true);
 
             LoadMyLocations();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public static void SavePreference(Context context, String key, String value) {
+    public static void SavePreference(Context context, String key, Object value) {
         try {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
             SharedPreferences.Editor editor = prefs.edit();
-            editor.putString(key, value);
+            if (value instanceof String) {
+                editor.putString(key, (String)value);
+            } else if (value instanceof Float) {
+                editor.putFloat(key, (Float)value);
+            }
             editor.commit();
         } catch (Exception e) {
             e.printStackTrace();
@@ -548,5 +555,15 @@ public class GeneralHelper {
             e.printStackTrace();
         }
         return address;
+    }
+
+    public static float GetAngle(float x, float y) {
+        float angle = (float) Math.toDegrees(Math.atan2(y - 0, x - 0));
+
+        if(angle < 0){
+            angle += 360;
+        }
+
+        return angle;
     }
 }

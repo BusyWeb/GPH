@@ -8,12 +8,10 @@
     tools:context="com.ccs.gph.activity.GphActivity"
     tools:showIn="@layout/app_bar_gph">
 
-    <LinearLayout
+    <FrameLayout
         android:id="@+id/rootView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:orientation="vertical"
-        android:weightSum="100"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -24,8 +22,7 @@
         <FrameLayout
             android:id="@+id/overlayLayout"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="60"
+            android:layout_height="match_parent"
             android:background="@android:color/transparent">
 
             <fragment
@@ -45,12 +42,18 @@
         </FrameLayout>
 
         <LinearLayout
+            android:id="@+id/layoutSetLocation"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="40"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@android:color/background_light"
             android:gravity="center_vertical"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:paddingBottom="16dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="16dp"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -60,7 +63,7 @@
                 android:weightSum="100">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="80"
                     android:orientation="vertical">
@@ -90,7 +93,7 @@
                     </LinearLayout>
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
 
@@ -103,7 +106,7 @@
 
                         <EditText
                             android:id="@+id/editTextLongitude"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:ems="10"
                             android:inputType="numberSigned|numberDecimal"
@@ -111,25 +114,28 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="20"
-                    android:orientation="vertical">
+            </LinearLayout>
 
-                    <Button
-                        android:id="@+id/buttonSetLocation"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="SET" />
-                </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <Button
+                    android:id="@+id/buttonSetLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="GO TO LOCATION" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <TextView
                     android:id="@+id/textView5"
@@ -164,5 +170,5 @@
 
         </LinearLayout>
 
-    </LinearLayout>
+    </FrameLayout>
 </android.support.constraint.ConstraintLayout>

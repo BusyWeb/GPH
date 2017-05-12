@@ -13,6 +13,9 @@
     <string name="pref_random_movement_description">Enable and disable location (gps) movement randomly by user settings.</string>
     <string name="pref_random_movement_title">Enable location movement</string>
 
+    <string name="pref_sensor_mode_description">Use device sensors for manual location movements. (To stop, put device on plat surface. Shake the device to restart. Tilt the device to change location movement directions.)</string>
+    <string name="pref_sensor_mode_title">Use device sensors</string>
+
     <string name="pref_location_change_interval_title">GPS change interval</string>
     <string-array name="pref_location_change_interval_list_titles">
         <item>1 sec.</item>
@@ -47,10 +50,10 @@
         <item>0.001 (50-100 meters)</item>
     </string-array>
     <string-array name="pref_location_change_distance_list_values">
-        <item>00005</item>
-        <item>0001</item>
-        <item>0002</item>
-        <item>001</item>
+        <item>0.00005</item>
+        <item>0.0001</item>
+        <item>0.0002</item>
+        <item>0.001</item>
     </string-array>
 
     <string name="pref_header_app_setting">App and Notification</string>

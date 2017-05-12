@@ -10,6 +10,8 @@ import com.ccs.gph.gps.AppGps;
 import com.ccs.gph.gps.AppLocationManager;
 import com.ccs.gph.gps.LocationData;
 import com.ccs.gph.mylocations.MyLocationData;
+import com.ccs.gph.sensor.AppSensorManager;
+import com.ccs.gph.sensor.SensorData;
 
 import java.util.ArrayList;
 
@@ -23,6 +25,10 @@ public class AppShared {
     public static Activity gActivity;
     public static Context gContext;
     public static Resources gResources;
+
+    public static SensorData gSensorData;
+    public static AppSensorManager gSensorManager;
+
 
     public static String RootFolder = Environment.getExternalStorageDirectory().toString() + "/" + "gph/";
     public static final String RootFolderName = "gph";
@@ -41,13 +47,16 @@ public class AppShared {
     public static final String PREF_ADDRESS_LATITUDE_KEY = "pref_address_latitude_key";
     public static final String PREF_ADDRESS_LONGITUDE_KEY = "pref_address_longitude_key";
     public static final String PREF_MOVEMENT_MAGNITUDE_KEY = "pref_movement_magnitude_key";
+    public static final String PREF_MAP_ZOOM_KEY = "pref_map_zoom_key";
 
     public static String PrefAddress = "";
     public static double PrefAddressLatitude = 0d;
     public static double PrefAddressLongitude = 0d;
     public static String PrefMovementMagnitude = "min";
+    public static float PrefMapZoom = 12f;
 
     public static final String PREF_RANDOM_MOVEMENT_KEY = "pref_random_movement";
+    public static final String PREF_SENSOR_MODE_KEY = "pref_sensor_mode";
     public static final String PREF_LOCATION_CHANGE_INTERVAL = "pref_location_change_interval";
     public static final String PREF_LOCATION_CHANGE_DISTANCE = "pref_location_change_distance";
     public static final String PREF_MAP_APP_CLOSE = "pref_map_app_close";
@@ -55,6 +64,7 @@ public class AppShared {
     public static final String PREF_SHOW_NOTIFICATION = "pref_show_notification";
 
     public static boolean PrefRandomMovement = true;
+    public static boolean PrefSensorMode = true;
     public static long PrefLocationChangeInterval = 1000;
     public static double PrefLocationChangeDistance = 0.0001;
     public static boolean PrefMapAppClose = true;

@@ -27,6 +27,7 @@ import com.ccs.gph.R;
 import com.ccs.gph.activity.GphActivity;
 import com.ccs.gph.activity.MainActivity;
 import com.ccs.gph.util.AppShared;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Date;
 import java.util.Random;
@@ -50,6 +51,48 @@ public class serviceGPS extends Service {
     private PowerManager mPM;
     private static PowerManager.WakeLock mWakeLock;
 
+    public enum SensorDataMode {
+        MarryGoAround,
+        RollerCoast,
+        Jumping,
+        Running,
+        Walking,
+        Sleep,
+        Stop,
+        Start,
+        Manual
+    }
+    private static int mSensorModeStep = 0;
+    private static double mInterval = AppShared.PrefLocationChangeInterval;
+    private static float mMovementAngle;
+    private static float mMovementMagnitude;
+
+    private static SensorDataMode mSensorDataMode = SensorDataMode.Sleep;
+    public static void SetSensorDaraMode(SensorDataMode mode) {
+        mSensorDataMode = mode;
+    }
+    public static void SetSensorModeManual(float angle, float pitch, float roll) {
+        mSensorDataMode = SensorDataMode.Manual;
+        mMovementAngle = angle;
+
+        if (pitch > 20 || roll > 20) {
+            mMovementMagnitude = 2;
+        } else {
+            mMovementMagnitude = 1;
+        }
+    }
+    public static SensorDataMode GetSensorDataMode() { return mSensorDataMode; }
+
+    private static LatLng mModeOrigin = null;
+    public static void AdjustLocationOrigin(double amountLatitude, double amountLongitude) {
+        mModeOrigin = new LatLng(mModeOrigin.latitude + amountLatitude, mModeOrigin.longitude + amountLongitude);
+    }
+
+
+
+    public static boolean ServiceStarted() {
+        return locationMockStarted;
+    }
 
     @SuppressLint("NewApi")
     @Override
@@ -179,6 +222,10 @@ public class serviceGPS extends Service {
             prepareLocationManager();
 
             locationMockStarted = true;
+            mInterval = AppShared.PrefLocationChangeInterval;
+
+            SetSensorDaraMode(SensorDataMode.Walking);
+            mModeOrigin = new LatLng(mLatitudeLast, mLongitudeLast);
 
             updateMockLocation();
 
@@ -202,6 +249,7 @@ public class serviceGPS extends Service {
             if (mMockLocationRun != null) {
                 MockLocationHandler.sendEmptyMessage(-1);
             }
+            mModeOrigin = null;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -368,7 +416,7 @@ public class serviceGPS extends Service {
 
 
                 int nextCheck = 0;
-                nextCheck = (int)AppShared.PrefLocationChangeInterval - (int) (new Date().getTime() - mLastLocationCheckTime);
+                nextCheck = (int)mInterval - (int) (new Date().getTime() - mLastLocationCheckTime);
                 if (nextCheck < 0) {
                     nextCheck = 0;
                 }
@@ -460,6 +508,10 @@ public class serviceGPS extends Service {
 
     private void updateMockLocation() {
         try {
+            if (mLocationManager == null) {
+                return;
+            }
+
             mMockLocation = new Location(LocationManager.GPS_PROVIDER);
             mMockLocation2 = new Location(LocationManager.NETWORK_PROVIDER);
 
@@ -475,7 +527,6 @@ public class serviceGPS extends Service {
 
             double random = 1.0d - (2.0d * Math.random());
             double sqrt = (Math.random() > 0.499d ? 1.0d : -1.0d) * Math.sqrt(1.0d - (random * random));
-
 
             // debug for new coordinates by distance
             //x2=x1+d×cosθ,y2=y1+d×sinθ,
@@ -505,69 +556,40 @@ public class serviceGPS extends Service {
 
             // check manual position change amount
             if (mChangeAmountEnabled) {
+
                 if (mLatitudeLast == 0) {
                     mLatitudeLast = (random * (1) + mMockLocation.getLongitude());
                 }
                 if (mLongitudeLast == 0) {
                     mLongitudeLast = (sqrt * ((1) + mMockLocation.getLatitude()));
                 }
-                Random rad = new Random();
-                int direction = rad.nextInt(32);
-                direction /= 4;
-                double diagonal = Math.abs(mChangeAmount * Math.sin(45));
 
-                if (direction == 0) {
-                    mLongitudeLast += mChangeAmount;
-                    mMockLocation.setBearing(0);
-                } else if (direction == 1) {
-                    mLatitudeLast += mChangeAmount;
-                    mMockLocation.setBearing(90);
-                } else if (direction == 2) {
-                    mLongitudeLast -= mChangeAmount;
-                    mMockLocation.setBearing(180);
-                } else if (direction == 3) {
-                    mLatitudeLast -= mChangeAmount;
-                    mMockLocation.setBearing(270);
-                } else if (direction == 4) {
-                    mLongitudeLast += diagonal;
-                    mLatitudeLast += diagonal;
-                    mMockLocation.setBearing(45);
-                } else if (direction == 5) {
-                    mLongitudeLast -= diagonal;
-                    mLatitudeLast += diagonal;
-                    mMockLocation.setBearing(135);
-                } else if (direction == 6) {
-                    mLongitudeLast -= diagonal;
-                    mLatitudeLast -= diagonal;
-                    mMockLocation.setBearing(225);
-                } else if (direction == 7) {
-                    mLongitudeLast += diagonal;
-                    mLatitudeLast -= diagonal;
-                    mMockLocation.setBearing(315);
+                if (AppShared.PrefSensorMode) {
+                    //mSensorModeStep = 0;
+                    if (mSensorDataMode == SensorDataMode.Sleep || mSensorDataMode == SensorDataMode.Stop) {
+
+                        //runMarryGoAround();
+                        runSleepMode();
+
+                    } else if (mSensorDataMode == SensorDataMode.Manual || mSensorDataMode == SensorDataMode.Start) {
+                        mSensorDataMode = SensorDataMode.Manual;
+                        runManualMode();
+
+                    } else {
+
+                        runWalkingMode();
+
+                    }
+
+                } else {
+
+                    runWalkingMode();
+
                 }
-
-                mMockLocation.setLongitude(mLongitudeLast);
-                mMockLocation.setLatitude(mLatitudeLast);
-
-                mMockLocation2.setLongitude(mLongitudeLast);
-                mMockLocation2.setLatitude(mLatitudeLast);
-                mMockLocation2.setBearing(mMockLocation.getBearing());
 
             } else {
 
-//                if (mHasMockLocation) {
-//                    mMockLocation.setLongitude((random +  + (int)mLongitudeLast + mMockLocation.getLongitude()));
-//                    mMockLocation.setLatitude((sqrt + (int)mLatitudeLast + mMockLocation.getLatitude()));
-//                } else {
-//                    mMockLocation.setLongitude((random * (1) + mMockLocation.getLongitude()));
-//                    mMockLocation.setLatitude((sqrt * ((1) + mMockLocation.getLatitude())));
-//                }
-
-                mMockLocation.setLongitude(mLongitudeLast );
-                mMockLocation.setLatitude(mLatitudeLast);
-
-                mMockLocation2.setLongitude(mMockLocation.getLongitude());
-                mMockLocation2.setLatitude(mMockLocation.getLatitude());
+                    runSleepMode();
 
             }
 
@@ -612,6 +634,256 @@ public class serviceGPS extends Service {
         }
     }
 
+    private void runSleepMode() {
+        try {
+            mMockLocation.setLongitude(mLongitudeLast );
+            mMockLocation.setLatitude(mLatitudeLast);
+
+            mMockLocation2.setLongitude(mMockLocation.getLongitude());
+            mMockLocation2.setLatitude(mMockLocation.getLatitude());
+
+            mModeOrigin = new LatLng(mLatitudeLast, mLongitudeLast);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void runManualMode() {
+        try {
+            // need to have correct calculation ???
+            LatLng center = new LatLng(mModeOrigin.latitude, mModeOrigin.longitude);
+
+//            mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(mMovementAngle));
+//            mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(mMovementAngle));
+
+            double diagonal = Math.abs(mChangeAmount * Math.sin(45)) * mMovementMagnitude;
+
+            if (mMovementAngle == 0) {
+                mLatitudeLast += mChangeAmount * mMovementMagnitude;
+                mMockLocation.setBearing(0);
+            } else if (mMovementAngle == 90) {
+                mLongitudeLast += mChangeAmount * mMovementMagnitude;
+                mMockLocation.setBearing(90);
+            } else if (mMovementAngle == 180) {
+                mLatitudeLast -= mChangeAmount * mMovementMagnitude;
+                mMockLocation.setBearing(180);
+            } else if (mMovementAngle == 270) {
+                mLongitudeLast -= mChangeAmount * mMovementMagnitude;
+                mMockLocation.setBearing(270);
+            } else if (mMovementAngle == 45) {
+                mLatitudeLast += diagonal;
+                mLongitudeLast += diagonal;
+                mMockLocation.setBearing(45);
+            } else if (mMovementAngle == 135) {
+                mLatitudeLast -= diagonal;
+                mLongitudeLast += diagonal;
+                mMockLocation.setBearing(135);
+            } else if (mMovementAngle == 225) {
+                mLongitudeLast -= diagonal;
+                mLatitudeLast -= diagonal;
+                mMockLocation.setBearing(225);
+            } else if (mMovementAngle == 315) {
+                mLatitudeLast += diagonal;
+                mLongitudeLast -= diagonal;
+                mMockLocation.setBearing(315);
+            }
+
+            mMockLocation.setBearing(mMovementAngle);
+
+            mMockLocation.setLongitude(mLongitudeLast);
+            mMockLocation.setLatitude(mLatitudeLast);
+
+            mMockLocation2.setLongitude(mLongitudeLast);
+            mMockLocation2.setLatitude(mLatitudeLast);
+            mMockLocation2.setBearing(mMockLocation.getBearing());
+
+            mModeOrigin = new LatLng(mLatitudeLast, mLongitudeLast);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void runWalkingMode() {
+        try {
+            Random rad = new Random();
+            int direction = rad.nextInt(32);
+            direction /= 4;
+            double diagonal = Math.abs(mChangeAmount * Math.sin(45));
+
+            if (direction == 0) {
+                mLongitudeLast += mChangeAmount;
+                mMockLocation.setBearing(0);
+            } else if (direction == 1) {
+                mLatitudeLast += mChangeAmount;
+                mMockLocation.setBearing(90);
+            } else if (direction == 2) {
+                mLongitudeLast -= mChangeAmount;
+                mMockLocation.setBearing(180);
+            } else if (direction == 3) {
+                mLatitudeLast -= mChangeAmount;
+                mMockLocation.setBearing(270);
+            } else if (direction == 4) {
+                mLongitudeLast += diagonal;
+                mLatitudeLast += diagonal;
+                mMockLocation.setBearing(45);
+            } else if (direction == 5) {
+                mLongitudeLast -= diagonal;
+                mLatitudeLast += diagonal;
+                mMockLocation.setBearing(135);
+            } else if (direction == 6) {
+                mLongitudeLast -= diagonal;
+                mLatitudeLast -= diagonal;
+                mMockLocation.setBearing(225);
+            } else if (direction == 7) {
+                mLongitudeLast += diagonal;
+                mLatitudeLast -= diagonal;
+                mMockLocation.setBearing(315);
+            }
+
+            mMockLocation.setLongitude(mLongitudeLast);
+            mMockLocation.setLatitude(mLatitudeLast);
+
+            mMockLocation2.setLongitude(mLongitudeLast);
+            mMockLocation2.setLatitude(mLatitudeLast);
+            mMockLocation2.setBearing(mMockLocation.getBearing());
+
+            mModeOrigin = new LatLng(mLatitudeLast, mLongitudeLast);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void runRunningMode() {
+        mChangeAmount *= 2;
+        runWalkingMode();
+    }
+
+    private void runMarryGoAround() {
+        try {
+            LatLng center = new LatLng(mModeOrigin.latitude, mModeOrigin.longitude);
+
+            if (mSensorModeStep == 0) {
+                mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(0));
+                mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(0));
+                mMockLocation.setBearing(0);
+            } else if (mSensorModeStep == 1) {
+                mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(45));
+                mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(45));
+                mMockLocation.setBearing(45);
+            } else if (mSensorModeStep == 2) {
+                mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(90));
+                mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(90));
+                mMockLocation.setBearing(90);
+            } else if (mSensorModeStep == 3) {
+                mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(135));
+                mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(135));
+                mMockLocation.setBearing(135);
+            } else if (mSensorModeStep == 4) {
+                mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(180));
+                mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(180));
+                mMockLocation.setBearing(180);
+            } else if (mSensorModeStep == 5) {
+                mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(225));
+                mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(225));
+                mMockLocation.setBearing(225);
+            } else if (mSensorModeStep == 6) {
+                mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(270));
+                mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(270));
+                mMockLocation.setBearing(270);
+            } else if (mSensorModeStep == 7) {
+                mLatitudeLast = center.latitude + (mChangeAmount * Math.sin(315));
+                mLongitudeLast = center.longitude + (mChangeAmount * Math.cos(315));
+                mMockLocation.setBearing(315);
+            }
+            mSensorModeStep += 1;
+            if (mSensorModeStep > 7) {
+                mSensorModeStep = 0;
+                mModeOrigin = new LatLng(mLatitudeLast, mLongitudeLast);
+            }
+
+            mMockLocation.setLongitude(mLongitudeLast);
+            mMockLocation.setLatitude(mLatitudeLast);
+
+            mMockLocation2.setLongitude(mLongitudeLast);
+            mMockLocation2.setLatitude(mLatitudeLast);
+            mMockLocation2.setBearing(mMockLocation.getBearing());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private int randomDirection = 0;
+    private void runRollerCoast() {
+        try {
+            Random rad = new Random();
+
+            double diagonal = Math.abs(mChangeAmount * Math.sin(45));
+            if (mSensorModeStep < 4) {
+                mLatitudeLast = mLatitudeLast + (randomDirection == 0 ? mChangeAmount : -mChangeAmount);
+                mLongitudeLast = mLongitudeLast + (randomDirection == 0 ? diagonal : -diagonal);
+                mMockLocation.setBearing(0);
+            } else {
+                mLatitudeLast = mLatitudeLast + (randomDirection == 0 ? mChangeAmount : -mChangeAmount);
+                mLongitudeLast = mLongitudeLast - (randomDirection == 0 ? diagonal : -diagonal);
+                mMockLocation.setBearing(0);
+            }
+            mSensorModeStep += 1;
+            if (mSensorModeStep > 7) {
+                mSensorModeStep = 0;
+                if (randomDirection == 0) {
+                    randomDirection = rad.nextInt(1);
+                }
+                mModeOrigin = new LatLng(mLatitudeLast, mLongitudeLast);
+            }
+
+            mMockLocation.setLongitude(mLongitudeLast);
+            mMockLocation.setLatitude(mLatitudeLast);
+
+            mMockLocation2.setLongitude(mLongitudeLast);
+            mMockLocation2.setLatitude(mLatitudeLast);
+            mMockLocation2.setBearing(mMockLocation.getBearing());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void runJumping() {
+        try {
+            Random rad = new Random();
+
+            double diagonal = Math.abs(mChangeAmount * Math.sin(45));
+            if (mSensorModeStep < 4) {
+                //mLatitudeLast = mLatitudeLast
+                mLongitudeLast = mLongitudeLast + (randomDirection == 0 ? mChangeAmount : -mChangeAmount);;
+                mMockLocation.setBearing(0);
+            } else if (mSensorModeStep == 4) {
+                mLatitudeLast = mLatitudeLast + (randomDirection == 0 ? mChangeAmount/4/4 : -mChangeAmount);
+                mLongitudeLast = mModeOrigin.longitude + (randomDirection == 0 ? mChangeAmount/4/4 : -mChangeAmount);
+            } else {
+                //mLatitudeLast = mLatitudeLast + (randomDirection == 0 ? mChangeAmount : -mChangeAmount);
+                mLongitudeLast = mLongitudeLast - (randomDirection == 0 ? diagonal : -diagonal);
+                mMockLocation.setBearing(0);
+            }
+            mSensorModeStep += 1;
+            if (mSensorModeStep > 7) {
+                mSensorModeStep = 0;
+                if (randomDirection == 0) {
+                    randomDirection = rad.nextInt(1);
+                }
+                mModeOrigin = new LatLng(mLatitudeLast, mLongitudeLast);
+            }
+
+            mMockLocation.setLongitude(mLongitudeLast);
+            mMockLocation.setLatitude(mLatitudeLast);
+
+            mMockLocation2.setLongitude(mLongitudeLast);
+            mMockLocation2.setLatitude(mLatitudeLast);
+            mMockLocation2.setBearing(mMockLocation.getBearing());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void updateMockLocationInfo(Location location) {
         try {
             if (!AppShared.PrefShowNotification) {
@@ -652,6 +924,152 @@ public class serviceGPS extends Service {
         }
     }
 
+    private void updateMockLocationTesting() {
+        try {
+            if (mLocationManager == null) {
+                return;
+            }
+
+            mMockLocation = new Location(LocationManager.GPS_PROVIDER);
+            mMockLocation2 = new Location(LocationManager.NETWORK_PROVIDER);
+
+            mLatitude = mMockLocation.getLatitude();
+            mLongitude = mMockLocation.getLongitude();
+
+            if ((Math.abs(mLongitude - mLongitudeLast) != 0)
+                    || Math.abs(mLatitude - mLatitudeLast) != 0) {
+                mMockLocation.setLongitude(mLongitudeLast);
+                mMockLocation.setLatitude(mLatitudeLast);
+            }
+            //setRandomLocationValue(mMockLocation);
+
+
+
+
+            double random = 1.0d - (2.0d * Math.random());
+            double sqrt = (Math.random() > 0.499d ? 1.0d : -1.0d) * Math.sqrt(1.0d - (random * random));
+
+
+            // debug for new coordinates by distance
+            //x2=x1+d×cosθ,y2=y1+d×sinθ,
+//            double x = mMockLocation.getLatitude();
+//            double y = mMockLocation.getLongitude();
+//            double distance = 0.0001;   // meters
+//            double x2 = x + distance;   // * Math.cos(90);
+//            double y2 = y + distance;   // * Math.sin(90);
+//
+//            float[] d = new float[3];
+//            Location.distanceBetween(x, y, x2, y2, d);
+//
+//            Log.i("DBG", String.valueOf(x) + ", " + String.valueOf(y) + " >> " + String.valueOf(x2) + ", " + String.valueOf(y2)
+//                    + " :: " + String.valueOf(d[0]));
+            // Earth's equatorial radius equals 6,378,137 m
+            // Earth's average meridional radius is 6,367,449 m
+            // one latitudinal second measures 30.715 metres, one latitudinal minute is 1843 metres and one latitudinal degree is 110.6 kilometres
+            // one longitudinal second measures 30.92 metres, a longitudinal minute is 1855 metres and a longitudinal degree is 111.3 kilometres
+            // Longitudinal length equivalents at selected latitudes
+            //            Latitude	        City	            Degree	    Minute	    Second	    ±0.0001°
+            //            60°	            Saint Petersburg	55.80 km	0.930 km	15.50 m	    5.58 m
+            //            51° 28′ 38″ N	    Greenwich	        69.47 km	1.158 km	19.30 m	    6.95 m
+            //            45°	            Bordeaux	        78.85 km	1.31 km	    21.90 m	    7.89 m
+            //            30°	            New Orleans	        96.49 km	1.61 km	    26.80 m	    9.65 m
+            //            0°	            Quito	            111.3 km	1.855 km	30.92 m	    11.13 m
+
+
+            // check manual position change amount
+            if (mChangeAmountEnabled) {
+
+                if (mLatitudeLast == 0) {
+                    mLatitudeLast = (random * (1) + mMockLocation.getLongitude());
+                }
+                if (mLongitudeLast == 0) {
+                    mLongitudeLast = (sqrt * ((1) + mMockLocation.getLatitude()));
+                }
+
+                if (AppShared.PrefSensorMode) {
+                    //mSensorModeStep = 0;
+                    if (mSensorDataMode == SensorDataMode.Sleep) {
+                        mInterval = AppShared.PrefLocationChangeInterval * 1.5;
+                        runWalkingMode();
+                    } else if (mSensorDataMode == SensorDataMode.Walking) {
+                        mInterval = AppShared.PrefLocationChangeInterval;
+                        runWalkingMode();
+                    } else if (mSensorDataMode == SensorDataMode.Running) {
+                        mInterval = AppShared.PrefLocationChangeInterval / 2;
+                        runRunningMode();
+                    } else if (mSensorDataMode == SensorDataMode.MarryGoAround) {
+                        mInterval = AppShared.PrefLocationChangeInterval * 1.5;
+                        runMarryGoAround();
+                    } else if (mSensorDataMode == SensorDataMode.RollerCoast) {
+                        mInterval = AppShared.PrefLocationChangeInterval;
+                        runRollerCoast();
+                    } else if (mSensorDataMode == SensorDataMode.Jumping) {
+                        mInterval = AppShared.PrefLocationChangeInterval / 2;
+                        runJumping();
+                    } else {
+                        runSleepMode();
+                    }
+
+                } else {
+
+                    runWalkingMode();
+
+                }
+
+            } else {
+
+//                if (mHasMockLocation) {
+//                    mMockLocation.setLongitude((random +  + (int)mLongitudeLast + mMockLocation.getLongitude()));
+//                    mMockLocation.setLatitude((sqrt + (int)mLatitudeLast + mMockLocation.getLatitude()));
+//                } else {
+//                    mMockLocation.setLongitude((random * (1) + mMockLocation.getLongitude()));
+//                    mMockLocation.setLatitude((sqrt * ((1) + mMockLocation.getLatitude())));
+//                }
+
+                runSleepMode();
+
+            }
+
+            mMockLocation.setAccuracy(1f);
+//            mMockLocation.setAltitude(10f);
+//            mMockLocation.setBearing(1f);
+//            mMockLocation.setSpeed(10f);
+            mMockLocation.setTime(System.currentTimeMillis());
+            mMockLocation.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+
+            mMockLocation2.setAccuracy(1f);
+//            mMockLocation2.setAltitude(10f);
+//            mMockLocation2.setBearing(1f);
+//            mMockLocation2.setSpeed(10f);
+            mMockLocation2.setTime(System.currentTimeMillis());
+            mMockLocation2.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+            mMockLocation2.setLongitude(mMockLocation.getLongitude());
+            mMockLocation2.setLatitude(mMockLocation.getLatitude());
+
+            mLocationManager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true);
+            mLocationManager.setTestProviderEnabled(LocationManager.NETWORK_PROVIDER, true);
+            //mLocationManager.setTestProviderEnabled(LocationManager.PASSIVE_PROVIDER, true);
+
+            mLocationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, mMockLocation);
+            mLocationManager.setTestProviderLocation(LocationManager.NETWORK_PROVIDER, mMockLocation2);
+            //mLocationManager.setTestProviderLocation(LocationManager.PASSIVE_PROVIDER, mMockLocation);
+
+            mLocationManager.setTestProviderStatus(LocationManager.GPS_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+            mLocationManager.setTestProviderStatus(LocationManager.NETWORK_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+            //mLocationManager.setTestProviderStatus(LocationManager.PASSIVE_PROVIDER, LocationProvider.AVAILABLE, null, System.currentTimeMillis());
+
+            if (mMockLocationEvent != null) {
+                mMockLocationEvent.MockLocationChanged(mMockLocation);
+            }
+
+            updateMockLocationInfo(mMockLocation);
+
+            setSecureSetting();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 
 }

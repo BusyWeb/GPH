@@ -7,6 +7,10 @@
             android:icon="@drawable/ic_action_place"
             android:title="My Locations" />
         <item
+            android:id="@+id/nav_go_location"
+            android:icon="@drawable/ic_action_go_location"
+            android:title="Go To Location" />
+        <item
             android:id="@+id/nav_manage"
             android:icon="@drawable/ic_action_discard_dark"
             android:title="Settings" />

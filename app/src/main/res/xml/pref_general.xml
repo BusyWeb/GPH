@@ -17,7 +17,7 @@
         android:dependency="pref_random_movement"/>
 
     <ListPreference
-        android:defaultValue="0001"
+        android:defaultValue="0.0001"
         android:entries="@array/pref_location_change_distance_list_titles"
         android:entryValues="@array/pref_location_change_distance_list_values"
         android:key="pref_location_change_distance"
@@ -26,6 +26,12 @@
         android:title="@string/pref_location_change_distance_title"
         android:dependency="pref_random_movement"/>
 
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="pref_sensor_mode"
+        android:summary="@string/pref_sensor_mode_description"
+        android:title="@string/pref_sensor_mode_title"
+        android:dependency="pref_random_movement"/>
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->

@@ -1,10 +1,12 @@
 package com.ccs.gph.activity;
 
 import android.Manifest;
+import android.animation.Animator;
 import android.app.Activity;
 import android.app.AppOpsManager;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -12,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.hardware.SensorEvent;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
@@ -30,6 +33,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -45,12 +49,14 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.ccs.gph.BuildConfig;
 import com.ccs.gph.R;
 import com.ccs.gph.mylocations.MyLocationData;
+import com.ccs.gph.sensor.AppSensorManager;
 import com.ccs.gph.service.serviceGPS;
 import com.ccs.gph.singleton.ApplicationSingletonGPS;
 import com.ccs.gph.util.AppShared;
@@ -92,13 +98,14 @@ public class GphActivity extends AppCompatActivity
     private static boolean mHasMockLocation = false;
 //    private static boolean mLocationMockStarted = false;
 
-    private static LinearLayout rootView;
+    private static FrameLayout rootView;
     private static FloatingActionButton fab;
     private static EditText editLatitude, editLongitude;
     private static Button buttonSetLocation;
     private static EditText editTextAddress;
     private static Button buttonSetAddress;
-
+    private static LinearLayout layoutSetLocation;
+    private SearchView searchView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -199,8 +206,59 @@ public class GphActivity extends AppCompatActivity
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.gph, menu);
+
+        MenuItem searchItem = menu.findItem(R.id.action_address);
+        SearchManager searchManager = (SearchManager) mContext.getSystemService(Context.SEARCH_SERVICE);
+        searchView = null;
+        if (searchItem != null) {
+            searchView = (SearchView) searchItem.getActionView();
+        }
+        if (searchView != null) {
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+            searchView.setIconifiedByDefault(true);
+            searchView.setQueryHint("Search by address");
+
+            searchView.setOnQueryTextListener(searchQueryTextListener);
+        }
+
         return true;
     }
+
+    private SearchView.OnQueryTextListener searchQueryTextListener = new SearchView.OnQueryTextListener() {
+        @Override
+        public boolean onQueryTextSubmit(String query) {
+            try {
+                if (!searchView.isIconified()) {
+                    searchView.setIconified(true);
+                }
+                String address = query;
+                if (address == null || address.length() < 1) {
+                    Toast.makeText(mContext, "Address required!", Toast.LENGTH_LONG).show();
+                    return false;
+                }
+                if (!GeneralHelper.IsOnline(mContext)) {
+                    Toast.makeText(mContext, "Off-line, please check network.", Toast.LENGTH_LONG).show();
+                    return false;
+                }
+                new SaveAddressLocationTask().execute(address);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return true;
+        }
+
+        @Override
+        public boolean onQueryTextChange(String newText) {
+            try {
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+    };
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -234,6 +292,13 @@ public class GphActivity extends AppCompatActivity
 //            mMarker = null;
 //            mGoogleMap.clear();
 //            mGoogleMap = null;
+        } else if (id == R.id.nav_go_location) {
+
+            if (layoutSetLocation.getVisibility() == View.VISIBLE) {
+                closeSetLocation();
+            } else {
+                openSetLocation();
+            }
 
         } else if (id == R.id.nav_manage) {
             Intent intent = new Intent(mContext, SettingsActivity.class);
@@ -265,7 +330,8 @@ public class GphActivity extends AppCompatActivity
         try {
             mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-            rootView = (LinearLayout) findViewById(R.id.rootView);
+            rootView = (FrameLayout) findViewById(R.id.rootView);
+            layoutSetLocation = (LinearLayout) findViewById(R.id.layoutSetLocation);
             editLatitude = (EditText) findViewById(R.id.editTextLatitude);
             editLongitude = (EditText) findViewById(R.id.editTextLongitude);
             buttonSetLocation = (Button) findViewById(R.id.buttonSetLocation);
@@ -333,6 +399,13 @@ public class GphActivity extends AppCompatActivity
                             mMapAddress = data.Address;
                             setMarker(new LatLng(data.Latitude, data.Longitude));
                             updateUi();
+
+                            AppShared.PrefAddress = mMapAddress;
+                            AppShared.PrefAddressLatitude = mLatitude;
+                            AppShared.PrefAddressLongitude =mLongitude;
+                            GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_KEY, mMapAddress);
+                            GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_LATITUDE_KEY, String.valueOf(mLatitude));
+                            GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_LONGITUDE_KEY, String.valueOf(mLongitude));
                         }
                     }
                 }
@@ -367,6 +440,21 @@ public class GphActivity extends AppCompatActivity
             e.printStackTrace();
         }
         super.onStop();
+    }
+
+    @Override
+    public void finish() {
+        try {
+
+            if (layoutSetLocation.getVisibility() == View.VISIBLE) {
+                closeSetLocation();
+                return;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        super.finish();
     }
 
     @Override
@@ -526,7 +614,7 @@ public class GphActivity extends AppCompatActivity
                 mGoogleMap.getUiSettings().setZoomControlsEnabled(true);
                 mGoogleMap.getUiSettings().setMapToolbarEnabled(true);
 
-                //mZoom = 6f;
+                mZoom = AppShared.PrefMapZoom;
 
                 if (AppShared.PrefAddressLatitude != 0 && AppShared.PrefAddressLongitude != 0) {
                     if (!mLoadFromActivityResult) {
@@ -592,6 +680,9 @@ public class GphActivity extends AppCompatActivity
             mZoom = cameraPosition.zoom;
             mTilt = cameraPosition.tilt;
             mBearing = cameraPosition.bearing;
+
+            AppShared.PrefMapZoom = mZoom;
+            GeneralHelper.SavePreference(mContext, AppShared.PREF_MAP_ZOOM_KEY, mZoom);
         }
     };
 
@@ -750,6 +841,8 @@ public class GphActivity extends AppCompatActivity
                 mHasMockLocation = false;
                 mLatitude = 0.0d;
                 mLongitude = 0.0d;
+
+                Toast.makeText(mContext, "Please provide valid location values.", Toast.LENGTH_LONG).show();
                 return;
             }
             mHasMockLocation = true;
@@ -761,6 +854,13 @@ public class GphActivity extends AppCompatActivity
             setMarker(latLng);
 
             new LoadAddressTask().execute(latLng);
+
+            AppShared.PrefAddressLatitude = mLatitude;
+            AppShared.PrefAddressLongitude =mLongitude;
+            GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_LATITUDE_KEY, String.valueOf(mLatitude));
+            GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_LONGITUDE_KEY, String.valueOf(mLongitude));
+
+            closeSetLocation();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -813,6 +913,9 @@ public class GphActivity extends AppCompatActivity
 
                 mProgress = null;
                 if (result) {
+                    AppShared.PrefAddress = mAddress;
+                    AppShared.PrefAddressLatitude = mLatitude;
+                    AppShared.PrefAddressLongitude =mLongitude;
                     GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_KEY, mAddress);
                     GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_LATITUDE_KEY, String.valueOf(mLatitude));
                     GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_LONGITUDE_KEY, String.valueOf(mLongitude));
@@ -889,6 +992,9 @@ public class GphActivity extends AppCompatActivity
                 mProgress = null;
                 if (result) {
                     updateUi();
+
+                    AppShared.PrefAddress = mMapAddress;
+                    GeneralHelper.SavePreference(mContext, AppShared.PREF_ADDRESS_KEY, mMapAddress);
                 } else {
                     updateUi();
                     Toast.makeText(mContext, "Failed to get address...", Toast.LENGTH_LONG).show();
@@ -1000,6 +1106,8 @@ public class GphActivity extends AppCompatActivity
 
             prepareMockLocationEvent();
 
+            startSensorService();
+
             // using service
             Intent service = new Intent(mContext, serviceGPS.class);
             service.putExtra("start", 1);
@@ -1011,6 +1119,14 @@ public class GphActivity extends AppCompatActivity
             startService(service);
 
             AppShared.LocationMockStarted = true;
+
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    AppShared.gSensorData.CalibrateSensors();
+                }
+            }, 2000);
         } catch (Exception ex) {
            Log.e("exception", ex.getMessage());
         }
@@ -1018,6 +1134,8 @@ public class GphActivity extends AppCompatActivity
 
     public void stopMock() {
         try {
+            stopSensorService();
+
             // service method
             Intent service = new Intent(mContext, serviceGPS.class);
             service.putExtra("stop", 1);
@@ -1029,4 +1147,92 @@ public class GphActivity extends AppCompatActivity
         }
     }
 
+
+    private void startSensorService() {
+        try {
+            if (AppShared.gSensorManager == null) {
+            }
+            AppShared.gSensorManager.StartSensorManager(OnNewSensorListener);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    private void stopSensorService() {
+        try {
+            if (AppShared.gSensorManager != null) {
+                AppShared.gSensorManager.Close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private AppSensorManager.IOnNewSensorListener OnNewSensorListener = new AppSensorManager.IOnNewSensorListener() {
+        @Override
+        public void onNewSensorEvent(SensorEvent event) {
+            if (AppShared.gSensorData == null) {
+                return;
+            }
+            AppShared.gSensorData.NewEvent(event);
+        }
+    };
+
+    private static void openSetLocation() {
+        try {
+            layoutSetLocation.setAlpha(0.0f);
+            layoutSetLocation.setVisibility(View.VISIBLE);
+            float height = layoutSetLocation.getHeight();
+            layoutSetLocation.animate()
+                    .translationY(0)
+                    .alpha(1.0f)
+                    .setListener(new Animator.AnimatorListener() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+
+                        }
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            layoutSetLocation.setVisibility(View.VISIBLE);
+                        }
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+
+                        }
+                        @Override
+                        public void onAnimationRepeat(Animator animation) {
+
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    private static void closeSetLocation() {
+        try {
+            float height = layoutSetLocation.getHeight();
+            layoutSetLocation.animate()
+                    .translationY(height)
+                    .alpha(0.0f)
+                    .setListener(new Animator.AnimatorListener() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+
+                        }
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            layoutSetLocation.setVisibility(View.GONE);
+                        }
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+
+                        }
+                        @Override
+                        public void onAnimationRepeat(Animator animation) {
+
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
